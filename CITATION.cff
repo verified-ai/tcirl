@@ -1,0 +1,41 @@
+cff-version: 1.2.0
+message: "If you use this code, please cite the paper."
+title: "TCIRL: Temporal-Causal Inference for Reinforcement Learning"
+license: MIT
+authors:
+  - family-names: Corazza
+    given-names: Jan
+  - family-names: Kaminskyi
+    given-names: Daniil
+  - family-names: Lutz
+    given-names: Simon
+  - family-names: Nossol
+    given-names: Patrick
+  - family-names: Partovi Aria
+    given-names: Hadi
+  - family-names: Xu
+    given-names: Zhe
+  - family-names: Neider
+    given-names: Daniel
+preferred-citation:
+  type: conference-paper
+  title: "Temporal-Causal Inference for Reinforcement Learning via Automata Learning"
+  authors:
+    - family-names: Corazza
+      given-names: Jan
+    - family-names: Kaminskyi
+      given-names: Daniil
+    - family-names: Lutz
+      given-names: Simon
+    - family-names: Nossol
+      given-names: Patrick
+    - family-names: Partovi Aria
+      given-names: Hadi
+    - family-names: Xu
+      given-names: Zhe
+    - family-names: Neider
+      given-names: Daniel
+  collection-title: "Proceedings of the 65th IEEE Conference on Decision and Control (CDC)"
+  year: 2026
+  doi: "10.48550/arXiv.2609.07461"
+  url: "https://arxiv.org/abs/2609.07461"

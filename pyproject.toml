@@ -1,0 +1,115 @@
+[project]
+name = "tcirl"
+version = "0.1.0"
+description = "Temporal-Causal Inference RL"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Jan Corazza", email = "corazzajan@gmail.com" }]
+requires-python = ">=3.13"
+dependencies = [
+    "graphviz>=0.21",
+    "numpy>=2.4.2",
+    "jax>=0.10",
+    "matplotlib>=3.10.8",
+    "simple-parsing>=0.1.8",
+    "wandb>=0.25.0",
+    "python-sat>=1.8.dev24",
+    "flax>=0.10",
+    # optax 0.2.7 sets the jax config option `jax_pmap_shmap_merge` at import time, and jax removed
+    # it in 0.10.1: importing optax raises AttributeError on that pair. 0.2.8 dropped the call.
+    "optax>=0.2.8",
+]
+
+[project.optional-dependencies]
+cuda = ["jax[cuda12]>=0.10"]
+
+[dependency-groups]
+dev = [
+    "diptest>=0.12.0",
+    "pyright>=1.1.410",
+    "ruff>=0.15.15",
+]
+
+[project.scripts]
+train_gene_editing_tcirl = "tcirl.cli.train_gene_editing_tcirl:main"
+train_gene_editing_q_learning = "tcirl.cli.train_gene_editing_q_learning:main"
+train_traffic_tcirl = "tcirl.cli.train_traffic_tcirl:main"
+train_traffic_q_learning = "tcirl.cli.train_traffic_q_learning:main"
+train_gene_editing_dqn = "tcirl.cli.train_gene_editing_dqn:main"
+train_traffic_dqn = "tcirl.cli.train_traffic_dqn:main"
+export_metrics = "tcirl.cli.export_metrics:main"
+export_group_metrics = "tcirl.cli.export_group_metrics:main"
+export_paper_results = "tcirl.cli.export_paper_results:main"
+check_runs_absent = "tcirl.cli.check_runs_absent:main"
+
+[build-system]
+requires = ["uv_build>=0.10.4,<0.11.0"]
+build-backend = "uv_build"
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+src = ["src"]
+
+# Ruff rule codes:
+# E=pycodestyle errors, F=pyflakes, I=isort, UP=pyupgrade, B=bugbear,
+# SIM=simplify, RUF=ruff-specific, NPY=numpy, PERF=performance,
+# C4=comprehensions, FA=annotations, ARG=unused-arguments, S=bandit,
+# LOG=logging, RET=return, RSE=raise, PIE=misc,
+# PLC/PLE/PLW=pylint, SLOT=slots, TRY=tryceratops
+[tool.ruff.lint]
+select = [
+    "E",
+    "F",
+    "I",
+    "UP",
+    "B",
+    "SIM",
+    "RUF",
+    "NPY",
+    "PERF",
+    "C4",
+    "FA",
+    "ARG",
+    "S",
+    "LOG",
+    "RET",
+    "RSE",
+    "PIE",
+    "PLC",
+    "PLE",
+    "PLW",
+    "SLOT",
+    "TRY",
+]
+ignore = ["E501", "S101", "TRY003", "S607"]
+
+future-annotations = true
+
+[tool.pyright]
+pythonVersion = "3.13"
+typeCheckingMode = "strict"
+reportMissingTypeStubs = false
+reportUnknownMemberType = false
+reportUnnecessaryTypeIgnoreComment = "warning"
+reportImplicitOverride = "warning"
+reportUninitializedInstanceVariable = "warning"
+venvPath = "."
+venv = ".venv"
+exclude = [
+    "**/.*",
+    ".venv",
+    "**/__pycache__",
+    "**/node_modules",
+    "**/build",
+    "**/*.ipynb",
+    "**/dist",
+    "**/*.egg-info",
+    "tmp",
+]
+
+[tool.ruff.lint.isort]
+# Pin first-party packages so import ordering is identical across machines
+# and independent of src/ auto-detection.
+known-first-party = ["tcirl"]

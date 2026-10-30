@@ -1,0 +1,74 @@
+algo: q_learning
+# The traffic case study of the paper, an avoidance task.
+#
+# Three hold-advance pairs in a row (wait, switch, wait, switch, wait, switch) fire the hidden
+# cause, and after that the corridor congests for the rest of the episode. The agent avoids the
+# cause by waiting one extra step after every second switch. The reward per step is
+# `1 - max_i q_i / 8`, where q_i are the queue lengths.
+#
+# The steps at which every update count restarts at 0 while the Q-values stay, as at a TCIRL
+# re-inference. The shipped configurations restart none.
+count_restart_steps: []
+run:
+  # The process seed, which `PYTHONHASHSEED` has to match.
+  seed: 43
+  # Training seeds per arm, as the paper states. Seed i of the bank is `seed_offset + i`.
+  num_runs: 50
+  # Environment steps per seed.
+  total_steps: 500_000
+  # Greedy evaluation episodes per seed at each evaluation point. Every seed, arm and point uses one
+  # fixed bank of episode keys (`rl.common.greedy_eval`), so two curves differ only where the
+  # policies differ.
+  eval_episodes: 50
+  # Equidistant evaluation points from 0 to `total_steps`, so 501 is one every 1000 steps. The
+  # spacing must be a multiple of `cadence.log_interval`, and 1 evaluates only the end of training.
+  num_eval_points: 501
+  # `true` also requires `--xla_gpu_deterministic_ops=true` in XLA_FLAGS. The launchers pin
+  # `PYTHONHASHSEED` and `--xla_gpu_autotune_level=0`.
+  fully_reproducible: false
+  # The first seed of the bank. Every arm uses the same offset, so seed i of two arms is the same
+  # seed and two arms can be compared seed by seed.
+  seed_offset: 0
+params:
+  # The discount factor, as the paper states. With rewards of at most 1 per step, every value is at
+  # most 1 / (1 - gamma) = 100.
+  gamma: 0.99
+  # The n-th update of a Q-table entry uses the step size c / (c + n - 1) with c =
+  # `step_size_scale`, the rescaled linear step size of Wainwright (2019). At a re-inference TCIRL
+  # restarts every update count at 0, because no update has used the new hypothesis yet.
+  step_size_scale: 50.0
+  # Exploration decays linearly from `start` to `end` over `decay_steps`.
+  epsilon:
+    start: 1.0
+    end: 0.01
+    decay_steps: 500_000
+  # The episode limit, as the paper states. It truncates an episode and keeps its bootstrap.
+  max_episode_steps: 100
+  # The initial value of every Q-table entry.
+  q_init: 60.0
+cadence:
+  # Training metrics are logged every `log_interval` steps. `stop_interval` and the evaluation
+  # spacing must be multiples of it.
+  log_interval: 1000
+  # TCIRL's counterexample interval, the same in every arm of a domain. `total_steps` must be a
+  # multiple of it.
+  stop_interval: 1000
+  # The time constant, in steps, of the exponential moving average that smooths the curves.
+  smoothing_steps: 10_000
+env:
+  # The cause is the alternating word that `difficulty` builds: hold, advance, hold, advance, hold,
+  # advance. A policy that advances every other step completes it at step 6.
+  difficulty: 6
+  # The flow. In Phase 1 each green intersection offers Geom(`p_rej_depart`) cars to move on and
+  # Bernoulli(`p_rej_arrive`) cars arrive at the first queue. In Phase 2 these are
+  # Bernoulli(`p_acc_depart`) and Geom(`p_acc_arrive`), so arrivals become bursty.
+  p_rej_depart: 0.7
+  p_rej_arrive: 0.5
+  p_acc_depart: 0.5
+  p_acc_arrive: 0.4
+  # The capacity of each queue, as the paper states.
+  q_max: 8
+  # Cars in every queue at the start of an episode.
+  queue_init: 2
+  # Steps to hold after an advance. An advance during the cooldown ends the episode with reward 0.
+  cooldown_max: 1

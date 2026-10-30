@@ -1,0 +1,91 @@
+algo: dqn
+# The genetic-therapy case study of the paper.
+#
+# The agent walks a 5x5 grid and applies medicine on cell `e` to hold a symptom level down. A hidden
+# cause fires when it steps on the cells `a`, `b`, `a`, `d` in that order, and after that the
+# symptom falls on its own, so the cause is a target the agent has to reach. Cell `c` is not part of
+# the cause. The reward per step is `1 - D/9`, where D is the symptom level. The paper's DQN arms do
+# not observe the cause state; `--cause_known` adds it to the network's input.
+cause_known: false
+run:
+  # The process seed, which `PYTHONHASHSEED` has to match.
+  seed: 43
+  # Training seeds per arm, as the paper states. Seed i of the bank is `seed_offset + i`.
+  num_runs: 50
+  # Environment steps per seed.
+  total_steps: 500_000
+  # Greedy evaluation episodes per seed at each evaluation point. Every seed, arm and point uses one
+  # fixed bank of episode keys (`rl.common.greedy_eval`), so two curves differ only where the
+  # policies differ.
+  eval_episodes: 50
+  # Equidistant evaluation points from 0 to `total_steps`, so 501 is one every 1000 steps. The
+  # spacing must be a multiple of `cadence.log_interval`, and 1 evaluates only the end of training.
+  num_eval_points: 501
+  # `true` also requires `--xla_gpu_deterministic_ops=true` in XLA_FLAGS. The launchers pin
+  # `PYTHONHASHSEED` and `--xla_gpu_autotune_level=0`.
+  fully_reproducible: false
+  # The first seed of the bank. Every arm uses the same offset, so seed i of two arms is the same
+  # seed and two arms can be compared seed by seed.
+  seed_offset: 0
+params:
+  # The discount factor, as the paper states. With rewards of at most 1 per step, every value is at
+  # most 1 / (1 - gamma) = 100.
+  gamma: 0.99
+  # Adam's learning rate.
+  lr: 0.001
+  # Exploration decays linearly from `start` to `end` over `decay_steps`.
+  epsilon:
+    start: 1.0
+    end: 0.01
+    decay_steps: 200_000
+  # The episode limit, as the paper states. It truncates an episode and keeps its bootstrap.
+  max_episode_steps: 100
+  # A multilayer perceptron with two ReLU layers of 128 units and a linear head, as the paper
+  # describes.
+  hidden_sizes: [128, 128]
+  # Frames in the input window, where a frame is the observable state and the label of the
+  # transition into it. The launcher sets 4 or 1 per arm; this is the default of a direct call.
+  history_len: 4
+  # Replay buffer capacity, in transitions.
+  buffer_size: 100_000
+  # Transitions per gradient step.
+  batch_size: 64
+  # Environment steps before the first gradient step, at most `buffer_size`.
+  warmup_steps: 1_000
+  # The target network's sync period, counted in gradient steps.
+  target_update_steps: 1_000
+  # Double DQN's target (van Hasselt et al., 2016) with the squared error and no gradient-norm
+  # clipping. `huber_delta` applies only when `huber` is true.
+  max_grad_norm: null
+  huber_delta: 1.0
+  double_q: true
+  huber: false
+cadence:
+  # Training metrics are logged every `log_interval` steps. `stop_interval` and the evaluation
+  # spacing must be multiples of it.
+  log_interval: 1000
+  # TCIRL's counterexample interval, the same in every arm of a domain. `total_steps` must be a
+  # multiple of it.
+  stop_interval: 10_000
+  # The time constant, in steps, of the exponential moving average that smooths the curves.
+  smoothing_steps: 10_000
+env:
+  # The 5x5 walkable cells of the case study inside a ring of walls.
+  grid_path: data/grids/gene_5x5.txt
+  # The probability that the agent's action is replaced by a uniformly random action, which can be
+  # the aimed one.
+  slip_prob: 0.05
+  # The phase dynamics: in Phase 1 the symptom changes by `d_rej` with probability `p_rej`, and in
+  # Phase 2 by `d_acc` with probability `p_acc`. Medicine acts on top of this.
+  d_rej: 1
+  p_rej: 0.75
+  d_acc: -1
+  p_acc: 0.75
+  # The symptom level runs from 0 to `disease_max` and starts each episode at `disease_init`. A dose
+  # removes `cure_reduction` levels and sets the harm level to `harm_max`, which falls by one on
+  # every step off the medicine cell, and a dose at positive harm ends the episode. The paper states
+  # these four values.
+  disease_max: 9
+  disease_init: 5
+  harm_max: 9
+  cure_reduction: 5

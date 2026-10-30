@@ -1,0 +1,15 @@
+XXXXXXX
+X     X
+X a b X
+X  S  X
+X d c X
+X  e  X
+XXXXXXX
+-------
+XXXXXXX
+X.....X
+X.....X
+X.....X
+X.....X
+X.....X
+XXXXXXX

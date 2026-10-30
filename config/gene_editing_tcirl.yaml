@@ -1,0 +1,100 @@
+algo: tcirl
+# The genetic-therapy case study of the paper.
+#
+# The agent walks a 5x5 grid and applies medicine on cell `e` to hold a symptom level down. A hidden
+# cause fires when it steps on the cells `a`, `b`, `a`, `d` in that order, and after that the
+# symptom falls on its own, so the cause is a target the agent has to reach. Cell `c` is not part of
+# the cause. The reward per step is `1 - D/9`, where D is the symptom level.
+run:
+  # The process seed, which `PYTHONHASHSEED` has to match.
+  seed: 43
+  # Training seeds per arm, as the paper states. Seed i of the bank is `seed_offset + i`.
+  num_runs: 50
+  # Environment steps per seed.
+  total_steps: 500_000
+  # Greedy evaluation episodes per seed at each evaluation point. Every seed, arm and point uses one
+  # fixed bank of episode keys (`rl.common.greedy_eval`), so two curves differ only where the
+  # policies differ.
+  eval_episodes: 50
+  # Equidistant evaluation points from 0 to `total_steps`, so 501 is one every 1000 steps. The
+  # spacing must be a multiple of `cadence.log_interval`, and 1 evaluates only the end of training.
+  num_eval_points: 501
+  # `true` also requires `--xla_gpu_deterministic_ops=true` in XLA_FLAGS. The launchers pin
+  # `PYTHONHASHSEED` and `--xla_gpu_autotune_level=0`.
+  fully_reproducible: false
+  # The first seed of the bank. Every arm uses the same offset, so seed i of two arms is the same
+  # seed and two arms can be compared seed by seed.
+  seed_offset: 0
+params:
+  # The discount factor, as the paper states. With rewards of at most 1 per step, every value is at
+  # most 1 / (1 - gamma) = 100.
+  gamma: 0.99
+  # The n-th update of a Q-table entry uses the step size c / (c + n - 1) with c =
+  # `step_size_scale`, the rescaled linear step size of Wainwright (2019), here with Wainwright's
+  # c = 1 / (1 - gamma) = 100. At a re-inference TCIRL restarts every update count at 0, because no
+  # update has used the new hypothesis yet.
+  step_size_scale: 100.0
+  # Exploration decays linearly from `start` to `end` over `decay_steps`. Under the value transfer
+  # rule "none", TCIRL restarts this schedule at every re-inference.
+  epsilon:
+    start: 1.0
+    end: 0.01
+    decay_steps: 100_000
+  # The episode limit, as the paper states. It truncates an episode and keeps its bootstrap.
+  max_episode_steps: 100
+  # The initial value of every Q-table entry.
+  q_init: 25.0
+cadence:
+  # Training metrics are logged every `log_interval` steps. `stop_interval` and the evaluation
+  # spacing must be multiples of it.
+  log_interval: 1000
+  # How often TCIRL checks the completed episodes for counterexamples and re-infers its hypothesis
+  # when one contradicts it. `total_steps` must be a multiple of it.
+  stop_interval: 10_000
+  # The time constant, in steps, of the exponential moving average that smooths the curves.
+  smoothing_steps: 10_000
+env:
+  # The 5x5 walkable cells of the case study inside a ring of walls.
+  grid_path: data/grids/gene_5x5.txt
+  # The probability that the agent's action is replaced by a uniformly random action, which can be
+  # the aimed one.
+  slip_prob: 0.05
+  # The phase dynamics: in Phase 1 the symptom changes by `d_rej` with probability `p_rej`, and in
+  # Phase 2 by `d_acc` with probability `p_acc`. Medicine acts on top of this.
+  d_rej: 1
+  p_rej: 0.75
+  d_acc: -1
+  p_acc: 0.75
+  # The symptom level runs from 0 to `disease_max` and starts each episode at `disease_init`. A dose
+  # removes `cure_reduction` levels and sets the harm level to `harm_max`, which falls by one on
+  # every step off the medicine cell, and a dose at positive harm ends the episode. The paper states
+  # these four values.
+  disease_max: 9
+  disease_init: 5
+  harm_max: 9
+  cure_reduction: 5
+tcirl:
+  # The largest hypothesis the SAT search tries. No hypothesis exceeds the smallest successor-closed
+  # DFA of the cause, which has 5 states in genetic therapy and 7 in traffic.
+  max_hypothesis_states: 10
+  # The paper's method: the hypothesis starts as the trivial rejecting DFA and is re-inferred by SAT
+  # whenever a completed episode contradicts it. The reference modes `oracle` and `none` are set on
+  # the command line.
+  inference_mode: sat
+  # The grid's empty label self-loops in every state of the cause, so the SAT search runs on traces
+  # without it and restores its self-loops afterwards. Every marker certificate moves to the
+  # shortened prefix it certifies (`inference.markers.compress_certificates`).
+  self_loop_symbol_enabled: true
+  # Optional clause groups of the SAT encoding: the BFS symmetry-breaking predicates of Ulyantsev et
+  # al. (2015), which admit one numbering of each DFA, and a rejecting initial state, which the
+  # sample implies as soon as it holds a negative prefix.
+  symmetry_breaking: true
+  initial_rejecting: false
+  # At a re-inference, every state of the new hypothesis takes the Q-values of the state of the old
+  # hypothesis that the most prefixes of the counterexamples lead to together with it. The appendix
+  # ablation runs the rules "none" and "exact".
+  value_transfer: counterexample
+  # Counterfactual updates, an ablation of the appendix that the paper's method leaves off. When on,
+  # each transition also updates every hypothesis state whose acceptance equals that of the visited
+  # state.
+  counterfactual: false
