@@ -30,19 +30,19 @@ def transfer_sources(
 
 
 def transfer_rows(
-    table: jax.Array, sources: dict[int, int], *, num_states: int, cause_index: int, fill: float
+    table: jax.Array, sources: dict[int, int], *, num_states: int, axis: int, fill: float
 ) -> jax.Array:
-    """The table of the new hypothesis: on the hypothesis axis `cause_index`, row `q` is row `sources[q]` of `table` below `num_states` and `fill` from there on."""
-    hypothesis_axis = (slice(None),) * cause_index
-    old_rows = (*hypothesis_axis, jnp.asarray([sources[q] for q in range(num_states)], jnp.int32))
-    new_rows = (*hypothesis_axis, jnp.arange(num_states, dtype=jnp.int32))
+    """The table of the new hypothesis: on the hypothesis axis `axis`, row `q` is row `sources[q]` of `table` below `num_states` and `fill` from there on."""
+    before = (slice(None),) * axis
+    old_rows = (*before, jnp.asarray([sources[q] for q in range(num_states)], jnp.int32))
+    new_rows = (*before, jnp.arange(num_states, dtype=jnp.int32))
     return jnp.full_like(table, fill).at[new_rows].set(table[old_rows])
 
 
-def kept_update_share(counts: jax.Array, sources: dict[int, int], *, cause_index: int) -> float:
-    """The share of the update counts in `counts` that lie in the rows of the old states that some new state takes."""
+def kept_update_share(counts: jax.Array, sources: dict[int, int], *, axis: int) -> float:
+    """The share of the update counts in `counts` that lie in the rows, on the hypothesis axis `axis`, of the old states that some new state takes."""
     kept_rows = (
-        *((slice(None),) * cause_index),
+        *((slice(None),) * axis),
         jnp.asarray(sorted(set(sources.values())), jnp.int32),
     )
     return float(jnp.sum(counts[kept_rows]) / jnp.sum(counts))

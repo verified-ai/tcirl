@@ -186,7 +186,7 @@ def screen_samples(
         ) -> tuple[tuple[EnvState, jax.Array, jax.Array], None]:
             state, key, total = carry
             key, env_key = jax.random.split(key)
-            new_state, reward, terminated, _, _ = env.step(state, action, env_key)
+            new_state, reward, terminated = env.step(state, action, env_key)
             # Every enumerated word respects the cooldown, the task's only termination condition.
             total = total + jnp.where(terminated, 0.0, reward)
             return (new_state, key, total), None

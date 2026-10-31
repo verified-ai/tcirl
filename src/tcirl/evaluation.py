@@ -304,9 +304,8 @@ class ScheduledEvaluation:
     finishes with and the paper reads them as such.
 
     At `num_eval_points: 1` this is an end-of-run evaluation, and it reports the numbers that
-    evaluating the pair `train()` returns would report -- with ONE exception, which is the TCIRL
-    arm and only when a seed re-infers during the final batch. `train()` returns the pair the
-    re-inference left; this evaluates the pair the batch trained (`agents.tcirl.train` says why).
+    evaluating the policy `train()` returns would report. For TCIRL that is the pair the final
+    batch trained, before a re-inference in that batch replaces it (`agents.tabular.train`).
 
     The final values do not depend on how many points the grid holds.
     """

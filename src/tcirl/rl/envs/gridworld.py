@@ -7,7 +7,6 @@ import jax
 import jax.numpy as jnp
 
 from tcirl.alphabet import OrderedAlphabet
-from tcirl.rl.common.tabular import EnvState
 
 # Action deltas: UP=0, DOWN=1, LEFT=2, RIGHT=3; plain tuples, because a module that builds a JAX array at import time starts a JAX backend.
 _DR = (-1, 1, 0, 0)
@@ -33,15 +32,14 @@ class GridWorld:
     """A gridworld MDP with walls, AP-labeled cells, and per-cell slip/stick.
 
     Each cell carries a *label*: the set of atomic propositions on it (possibly the
-    empty set), encoded via an `OrderedAlphabet`. Labels are read by a reward
-    automaton and are distinct from the cell's transition dynamics -- being a wall,
+    empty set), encoded via an `OrderedAlphabet`. Labels are what the cause DFA reads
+    and are distinct from the cell's transition dynamics -- being a wall,
     the slip probability, the stick probability, and being a start cell are dynamics,
     not part of the label.
 
     `slip_probs` randomizes the action on a move; `stick_probs` keeps the agent in
     place (a geometric "try to leave" RV). Both are per-cell and read from the agent's
-    current cell each step. `starts` lists every start cell; `reset` samples one
-    uniformly.
+    current cell each step. `starts` lists the start cells in row-major order.
     """
 
     walls: jax.Array
@@ -179,12 +177,6 @@ class GridWorld:
     def num_actions(self) -> int:
         return _NUM_ACTIONS
 
-    def sample_start(self, key: jax.Array) -> tuple[jax.Array, jax.Array]:
-        """Pick a start cell uniformly at random (deterministic for a single start)."""
-        idx = jax.random.randint(key, (), 0, self.starts.shape[0])
-        start = self.starts[idx]
-        return start[0], start[1]
-
 
 def _split_layers(text: str) -> list[list[str]]:
     """Split a map file into layers (lists of row strings) on `-`-only separator lines."""
@@ -250,12 +242,6 @@ def gridworld_step(
     return final_row, final_col, label
 
 
-def render_gridworld_map(gw: GridWorld) -> str:
-    """Render the static map: the raw layers verbatim, so no overlay aliases a label."""
-    sep = "-" * gw.width
-    return ("\n" + sep + "\n").join("\n".join(layer) for layer in gw.layers)
-
-
 def render_gridworld(gw: GridWorld, agent_row: int, agent_col: int) -> str:
     """Render every layer with the agent drawn as '@' (agent wins ties over the cell)."""
     sep = "-" * gw.width
@@ -269,80 +255,3 @@ def render_gridworld(gw: GridWorld, agent_row: int, agent_col: int) -> str:
             rows.append("".join(cells))
         blocks.append("\n".join(rows))
     return ("\n" + sep + "\n").join(blocks)
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class GridworldEnv:
-    """Gridworld as a TabularEnv (no reward automaton)."""
-
-    gw: GridWorld
-    name: str
-
-    @classmethod
-    def create(
-        cls,
-        path: Path | str,
-        *,
-        alphabet: OrderedAlphabet[str],
-        name: str = "gridworld",
-        slip_prob_low: float = 0.0,
-        slip_prob_high: float = 0.0,
-        stick_prob_low: float = 0.0,
-        stick_prob_high: float = 0.0,
-    ) -> GridworldEnv:
-        gw = GridWorld.create(
-            path,
-            alphabet=alphabet,
-            slip_prob_low=slip_prob_low,
-            slip_prob_high=slip_prob_high,
-            stick_prob_low=stick_prob_low,
-            stick_prob_high=stick_prob_high,
-        )
-        return cls(gw=gw, name=name)
-
-    @property
-    def state_shape(self) -> tuple[int, ...]:
-        return (self.gw.height, self.gw.width)
-
-    @property
-    def num_actions(self) -> int:
-        return self.gw.num_actions
-
-    @property
-    def is_time_indexed(self) -> bool:
-        return False
-
-    def get_size_hint(self) -> int | None:
-        # A bare gridworld has no automaton, hence no size to hint.
-        return None
-
-    def reset(self, key: jax.Array) -> EnvState:
-        row, col = self.gw.sample_start(key)
-        return EnvState(
-            indices=(row, col),
-            step_count=jnp.int32(0),
-            label=jnp.int32(self.gw.no_label),
-        )
-
-    def step(
-        self, state: EnvState, action: jax.Array, key: jax.Array
-    ) -> tuple[EnvState, jax.Array, jax.Array, jax.Array, jax.Array]:
-        row, col = state.indices[0], state.indices[1]
-        new_row, new_col, label = gridworld_step(self.gw, row, col, action, key)
-        new_state = EnvState(
-            indices=(new_row, new_col),
-            step_count=state.step_count + 1,
-            label=label,
-        )
-        # The bare grid never terminates, so `terminated`, `aut_terminated` and `aut_crashed` are False.
-        return new_state, jnp.float32(0.0), jnp.bool_(False), jnp.bool_(False), jnp.bool_(False)
-
-    def action_mask(self, state: EnvState) -> jax.Array:
-        del state
-        return jnp.ones(self.num_actions, dtype=jnp.bool_)
-
-    def render(self, state: EnvState) -> str:
-        return render_gridworld(self.gw, int(state.indices[0]), int(state.indices[1]))
-
-    def render_map(self) -> str:
-        return render_gridworld_map(self.gw)

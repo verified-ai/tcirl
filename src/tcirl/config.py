@@ -57,7 +57,7 @@ class ScheduleConfig:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class QLearningParams:
-    """Core hyperparameters of the tabular agents, Q-learning and TCIRL.
+    """Hyperparameters of the tabular learner (`tcirl.agents.tabular`), which Q-learning and TCIRL share.
 
     Each Q-table entry's step size is `rl.schedules.rescaled_linear_step_size` of its own update count with the scale `step_size_scale`.
     """
@@ -67,6 +67,8 @@ class QLearningParams:
     max_episode_steps: int
     q_init: float
     step_size_scale: float
+    # Each transition also updates the entry of its action at every other state of the agent's DFA with the phase of the visited state.
+    counterfactual: bool
 
     def __post_init__(self) -> None:
         if self.max_episode_steps <= 0:
@@ -192,8 +194,6 @@ def _check_cadence(run: RunConfig, cadence: LoggingCadenceConfig) -> None:
     eval_schedule(run, cadence)
 
 
-InferenceMode = Literal["none", "oracle", "sat"]
-
 # The rule by which, at a re-inference, every state of the new hypothesis takes the Q-values of a state of the old one (`tcirl.inference.transfer`), and every update count restarts at 0: "none" restarts the whole table, "exact" takes an equivalent old state and otherwise the old state of the shortest label sequence, and "counterexample" takes the old state that the most prefixes of the causal sample lead to together with it.
 ValueTransfer = Literal["none", "exact", "counterexample"]
 
@@ -203,17 +203,14 @@ ValueTransfer = Literal["none", "exact", "counterexample"]
 # ---------------------------------------------------------------------------
 @dataclass(frozen=True, slots=True, kw_only=True)
 class TcirlParams:
-    """TCIRL-specific hyperparameters."""
+    """The hyperparameters of TCIRL's cause inference (`tcirl.agents.tcirl.CauseInference`)."""
 
-    inference_mode: InferenceMode
     self_loop_symbol_enabled: bool
     initial_rejecting: bool
     symmetry_breaking: bool
     # The state of the old hypothesis whose Q-values each state of the new one takes at a re-inference.
     value_transfer: ValueTransfer
-    # Each transition also updates every live hypothesis state whose acceptance equals that of the visited state.
-    counterfactual: bool
-    # The largest hypothesis the SAT search tries, which also sizes the padded hypothesis axis in sat mode.
+    # The largest hypothesis the SAT search tries, which also sizes the hypothesis axis of the Q-table.
     max_hypothesis_states: int
 
 
@@ -360,7 +357,7 @@ class GeneEditingTcirlConfig(Serializable):
 
     @property
     def all_tags(self) -> list[str]:
-        return [*(self.logging.tags or ()), self.algo, self.tcirl.inference_mode]
+        return [*(self.logging.tags or ()), self.algo]
 
 
 @dataclass(slots=True, kw_only=True)
@@ -456,7 +453,7 @@ class TrafficSignalTcirlConfig(Serializable):
 
     @property
     def all_tags(self) -> list[str]:
-        return [*(self.logging.tags or ()), self.algo, "traffic", self.tcirl.inference_mode]
+        return [*(self.logging.tags or ()), self.algo, "traffic"]
 
 
 @dataclass(slots=True, kw_only=True)
@@ -484,6 +481,12 @@ class TrafficSignalDqnConfig(Serializable):
             cause_tag,
             f"h{self.params.history_len}",
         ]
+
+
+type QLearningConfig = GeneEditingQLConfig | TrafficSignalQLConfig
+type TcirlConfig = GeneEditingTcirlConfig | TrafficSignalTcirlConfig
+type DqnConfig = GeneEditingDqnConfig | TrafficSignalDqnConfig
+type AnyConfig = QLearningConfig | TcirlConfig | DqnConfig
 
 
 # ---------------------------------------------------------------------------

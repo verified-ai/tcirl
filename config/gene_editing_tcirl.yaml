@@ -44,6 +44,10 @@ params:
   max_episode_steps: 100
   # The initial value of every Q-table entry.
   q_init: 25.0
+  # Counterfactual updates, which the paper's method and its Q-learning reference leave off and the
+  # paper's ablation of counterfactual updates turns on. When on, each transition also updates the
+  # entry of its action at every other state of the agent's DFA with the phase of the visited state.
+  counterfactual: false
 cadence:
   # Training metrics are logged every `log_interval` steps. `stop_interval` and the evaluation
   # spacing must be multiples of it.
@@ -77,10 +81,6 @@ tcirl:
   # The largest hypothesis the SAT search tries. No hypothesis exceeds the smallest successor-closed
   # DFA of the cause, which has 5 states in genetic therapy and 7 in traffic.
   max_hypothesis_states: 10
-  # The paper's method: the hypothesis starts as the trivial rejecting DFA and is re-inferred by SAT
-  # whenever a completed episode contradicts it. The reference modes `oracle` and `none` are set on
-  # the command line.
-  inference_mode: sat
   # The grid's empty label self-loops in every state of the cause, so the SAT search runs on traces
   # without it and restores its self-loops afterwards. Every marker certificate moves to the
   # shortened prefix it certifies (`inference.markers.compress_certificates`).
@@ -91,10 +91,6 @@ tcirl:
   symmetry_breaking: true
   initial_rejecting: false
   # At a re-inference, every state of the new hypothesis takes the Q-values of the state of the old
-  # hypothesis that the most prefixes of the counterexamples lead to together with it. The appendix
-  # ablation runs the rules "none" and "exact".
+  # hypothesis that the most prefixes of the counterexamples lead to together with it. The paper's
+  # ablation of value transfer runs the rules "none" and "exact".
   value_transfer: counterexample
-  # Counterfactual updates, an ablation of the appendix that the paper's method leaves off. When on,
-  # each transition also updates every hypothesis state whose acceptance equals that of the visited
-  # state.
-  counterfactual: false

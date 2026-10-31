@@ -7,13 +7,23 @@ OrderedAlphabet: compact sequential encoding (N symbols) for automata and JAX ta
 
 from __future__ import annotations
 
-from collections.abc import Collection
+from collections.abc import Collection, Mapping
 from dataclasses import dataclass
 from typing import Protocol
+
+import numpy as np
 
 from tcirl.formulas.bool_interner import BoolInterner
 from tcirl.formulas.bool_syntax import BoolSyntax
 from tcirl.formulas.ltlf_syntax import LTLfSyntax, collect_appears
+
+
+def projection_table(projection: Mapping[int, int], num_labels: int) -> np.ndarray:
+    """`projection`, from each of `num_labels` label ids to a symbol of a smaller alphabet, as an int32 array."""
+    table = np.zeros(num_labels, dtype=np.int32)
+    for label, symbol in projection.items():
+        table[label] = symbol
+    return table
 
 
 def format_label_set[P](label: Collection[P]) -> str:
@@ -106,10 +116,6 @@ class BitmaskAlphabet[P]:
         return 1 << len(self.props)
 
     @property
-    def num_valid_symbols(self) -> int:
-        return len(self.valid_symbols)
-
-    @property
     def is_filtered(self) -> bool:
         return len(self.valid_symbols) < self.num_symbols
 
@@ -121,10 +127,6 @@ class BitmaskAlphabet[P]:
                 result |= self.prop_to_bit[prop]
         return result
 
-    def encode_single(self, prop: P) -> int:
-        """Encode a single proposition to its bitmask. O(1)."""
-        return self.prop_to_bit[prop]
-
     def decode(self, symbol: int) -> frozenset[P]:
         """Decode a bitmask to a label (set of true props). O(num_props)."""
         return frozenset(p for i, p in enumerate(self.props) if symbol & (1 << i))
@@ -135,10 +137,6 @@ class BitmaskAlphabet[P]:
     def decode_to_ints(self, symbol: int) -> frozenset[int]:
         """Decode to frozenset of prop indices. O(num_props)."""
         return frozenset(i for i in range(len(self.props)) if symbol & (1 << i))
-
-    def is_valid_symbol(self, symbol: int) -> bool:
-        """Check if symbol satisfies the label filter. O(1)."""
-        return symbol in self.valid_symbols
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -167,12 +165,6 @@ class OrderedAlphabet[P]:
             labels=labels,
             _label_to_id={label: i for i, label in enumerate(labels)},
         )
-
-    @classmethod
-    def from_singleton_props(cls, props: tuple[P, ...]) -> OrderedAlphabet[P]:
-        """The empty label at id 0, then one singleton label per prop in order."""
-        labels = (frozenset[P](), *(frozenset({p}) for p in props))
-        return cls.create(props=props, labels=labels)
 
     @property
     def num_symbols(self) -> int:

@@ -19,6 +19,7 @@ import numpy as np
 from simple_parsing import Serializable
 
 from tcirl.config import (
+    AnyConfig,
     GeneEditingDqnConfig,
     GeneEditingQLConfig,
     GeneEditingTcirlConfig,
@@ -31,15 +32,6 @@ from tcirl.logging.explanations import log_run_explanations
 from tcirl.logging.wandb import WandbLogger
 from tcirl.metrics.spec import MetricRegistry
 from tcirl.path_consts import ROOT_DIR
-
-type _AnyConfig = (
-    GeneEditingQLConfig
-    | GeneEditingTcirlConfig
-    | GeneEditingDqnConfig
-    | TrafficSignalQLConfig
-    | TrafficSignalTcirlConfig
-    | TrafficSignalDqnConfig
-)
 
 
 def install_sigterm_handler() -> None:
@@ -121,26 +113,28 @@ def seed_python_process(seed: int) -> None:
     np.random.seed(seed)  # noqa: NPY002
 
 
-def _default_run_name(config: _AnyConfig) -> str:
+def _default_run_name(config: AnyConfig) -> str:
     """The arm's name, which is also the directory its results land in.
 
-    These names are the paper's result directories (`results/<domain>/<name>/`), so changing one
-    changes where a figure looks for its CSV. The DQN's window length is part of its name because
+    These names are the directories of the paper's results (`results/<domain>/<name>/`). The DQN's
+    window length is part of its name because
     the paper reports two window lengths as two arms.
     """
     match config:
         case GeneEditingQLConfig() | TrafficSignalQLConfig():
             cause_tag = "known" if config.cause_known else "unknown"
-            return f"q_learning-cause_{cause_tag}"
+            counterfactual = "-counterfactual" if config.params.counterfactual else ""
+            return f"q_learning-cause_{cause_tag}{counterfactual}"
         case GeneEditingTcirlConfig() | TrafficSignalTcirlConfig():
-            return f"tcirl-{config.tcirl.inference_mode}"
+            counterfactual = "-counterfactual" if config.params.counterfactual else ""
+            return f"tcirl-sat{counterfactual}"
         case GeneEditingDqnConfig() | TrafficSignalDqnConfig():
             cause_tag = "known" if config.cause_known else "unknown"
             return f"dqn-cause_{cause_tag}_{config.params.history_len}"
 
 
 def init_logger(
-    config: _AnyConfig,
+    config: AnyConfig,
     env_name: str,
     specs: MetricRegistry,
 ) -> WandbLogger:

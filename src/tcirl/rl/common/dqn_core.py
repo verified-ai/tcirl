@@ -3,7 +3,7 @@
 
 `make_dqn_iteration` builds one JIT'd function, vmapped over seeds and scanned over
 `batch_steps` steps: `iteration(carry) -> (carry, outputs)`. It is the deep mirror of
-`qrm_core.make_iteration` and emits the same per-step training quantities
+`agents.tabular.make_iteration` and emits the same per-step training quantities
 (`~tcirl.rl.common.step_outputs.StepOutputs`), so the metric stack -- `qrm_logging.log_batch`, the
 `BatchLogger`, the recorder, the registry and the exporter -- applies to the deep and the tabular
 arms without a second code path.
@@ -184,7 +184,7 @@ def make_dqn_iteration(
         explore = jax.random.uniform(k_explore) < eps
         action = jnp.where(explore, random_action, greedy_action).astype(jnp.int32)
 
-        new_env_state, reward, terminated, _aut_terminated, _aut_crashed = env.step(
+        new_env_state, reward, terminated = env.step(
             carry.env_state, action, k_env
         )
         label = new_env_state.label

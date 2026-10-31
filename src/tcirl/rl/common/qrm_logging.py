@@ -27,7 +27,7 @@ def log_batch(
     """Build per-step signals from `outputs` and forward to `BatchLogger.process_batch`.
 
     `outputs` is any `~tcirl.rl.common.step_outputs.TrainStepOutputs`: the tabular iteration's
-    `BatchOutputs` and the deep iteration's `StepOutputs` both satisfy it, which is why the two
+    `TabularOutputs` and the deep iteration's `StepOutputs` both satisfy it, which is why the two
     arms share one logging, reducing and export path.
 
     `batch_metrics` are the per-batch-constant per-seed metrics (`inference/*`), logged once per

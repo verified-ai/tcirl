@@ -337,19 +337,12 @@ class GeneEditingEnv:
             label=initial_label,
         )
 
-    @property
-    def is_time_indexed(self) -> bool:
-        return False
-
     def render_map(self) -> str:
         return self.render(self.reset(jax.random.key(0)))
 
-    def get_size_hint(self) -> int | None:
-        return None
-
     def step(
         self, state: EnvState, action: jax.Array, key: jax.Array
-    ) -> tuple[EnvState, jax.Array, jax.Array, jax.Array, jax.Array]:
+    ) -> tuple[EnvState, jax.Array, jax.Array]:
         row, col = state.indices[0], state.indices[1]
         cause = state.indices[self.cause_index]
         disease = state.indices[self.disease_index]
@@ -441,8 +434,7 @@ class GeneEditingEnv:
             step_count=state.step_count + 1,
             label=combined_label,
         )
-        never = jnp.asarray(False)
-        return new_state, reward, terminated, never, never
+        return new_state, reward, terminated
 
     def action_mask(self, state: EnvState) -> jax.Array:
         del state

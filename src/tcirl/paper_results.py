@@ -84,7 +84,7 @@ from typing import Literal
 from tcirl.metrics.intervals import wilson_interval
 from tcirl.path_consts import FINAL_INTERVALS_FILE, PER_SEED_SAMPLE_FILE, PRINTED_DRAWS
 
-# The paper's five arms, in the order its legend lists them, with the column each occupies in
+# The paper's five arms, with the column each occupies in
 # `accept_state.csv`. The keys are the W&B group names, which are also the export's directory
 # names and the paper's `results/<domain>/<arm>/` directories.
 ARM_TABLE_COLUMNS: dict[str, str] = {
@@ -95,20 +95,20 @@ ARM_TABLE_COLUMNS: dict[str, str] = {
     "dqn-cause_unknown_1": "dqn1",
 }
 
-# The four ablation arms of the paper's appendix: TCIRL with the value transfer rules
-# "none" and "exact", TCIRL with counterfactual updates, and the true cause with counterfactual
-# updates, whose reference is `q_learning-cause_known`.
+# The four arms of the paper's ablations: TCIRL with the value transfer rules
+# "none" and "exact", TCIRL with counterfactual updates, and Q-learning with the cause state and
+# counterfactual updates, whose reference is `q_learning-cause_known`.
 ABLATION_ARMS: tuple[str, ...] = (
     "tcirl-sat-no_transfer",
     "tcirl-sat-exact_transfer",
     "tcirl-sat-counterfactual",
-    "tcirl-oracle-counterfactual",
+    "q_learning-cause_known-counterfactual",
 )
 
 # Every arm the projection writes, the paper's five and then the ablations.
 PROJECTED_ARMS: tuple[str, ...] = (*ARM_TABLE_COLUMNS, *ABLATION_ARMS)
 
-# The two tables of final returns of the appendix, by file name, each with its arms and the column each
+# The two tables of final returns of the paper's ablations, by file name, each with its arms and the column each
 # occupies: the ablation of value transfer and that of the counterfactual updates.
 ABLATION_TABLES: dict[str, dict[str, str]] = {
     "transfer_returns.csv": {
@@ -121,7 +121,7 @@ ABLATION_TABLES: dict[str, dict[str, str]] = {
         "tcirl-sat": "tcirl",
         "tcirl-sat-counterfactual": "counterfactual",
         "q_learning-cause_known": "oracle",
-        "tcirl-oracle-counterfactual": "oracle_counterfactual",
+        "q_learning-cause_known-counterfactual": "oracle_counterfactual",
     },
 }
 
@@ -150,7 +150,7 @@ PAPER_STATISTIC: dict[str, Statistic] = {
     # The tabular step size, the mean over the window's updates, and each TCIRL seed's exploration rate.
     "train_step_size": "mean",
     "inference_epsilon": "mean",
-    # The Q-table entries one TCIRL transition updates, and the share of the old table's update counts in the rows whose values its last re-inference transferred.
+    # The Q-table entries one tabular transition updates, and the share of the old table's update counts in the rows whose values its last re-inference transferred.
     "train_updated_states": "mean",
     "inference_kept_updates": "mean",
     # Recorded state variables, per timestep of an evaluation episode and averaged over one.
@@ -459,7 +459,7 @@ def write_accept_table(snapshot: Path, target: Path) -> dict[str, AcceptShare]:
 
 
 def write_final_returns(snapshot: Path, target: Path, arms: dict[str, str]) -> None:
-    """Write the final mean return of each of `arms` (arm -> column) and its interval bounds for one domain, in one row: `final_returns.csv`, which the paper's table of traffic cycles prints, and the two files of `ABLATION_TABLES`, which the appendix tables print."""
+    """Write the final mean return of each of `arms` (arm -> column) and its interval bounds for one domain, in one row: `final_returns.csv`, which the paper's table of traffic cycles prints, and the two files of `ABLATION_TABLES`, which the paper's ablation tables print."""
     if paper_statistic(SEED_SCORE_METRIC) != "mean":
         raise ValueError(
             f"{SEED_SCORE_METRIC} must print the mean, which `final_intervals.csv` holds"

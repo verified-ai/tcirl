@@ -29,7 +29,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from tcirl.alphabet import OrderedAlphabet
+import numpy as np
+
+from tcirl.alphabet import OrderedAlphabet, projection_table
 from tcirl.automata.conversion import bitmask_to_ordered
 from tcirl.automata.dfa import DFA, validate_cause_dfa
 from tcirl.formulas.bool_patterns import mutual_exclusion_filter
@@ -88,6 +90,11 @@ class GeneEditingSpec:
     grid_to_obs_dec_recovery: dict[int, int]
     grid_to_obs_dec_medicine_recovery: dict[int, int]
     perf: dict[str, float]
+
+    @property
+    def label_projection(self) -> np.ndarray:
+        """The grid symbol of each observation label, the symbol the cause and every hypothesis read."""
+        return projection_table(self.combined_to_grid, self.obs_alphabet.num_symbols)
 
 
 def create_gene_editing_cause() -> GeneEditingSpec:

@@ -194,8 +194,8 @@ class EvalDriver[ParamsT]:
     policy is rolled out. With no sink both calls do nothing, so the loop has ONE code path whether
     or not the run measures its policy.
 
-    `ParamsT` is the arm's per-seed evaluable parameters: a Q-table, a `TcirlSeedParams` pair, a
-    network's `nnx.GraphState`. It is NOT a `GreedyPolicy`'s `P`, which is the state the policy
+    `ParamsT` is the arm's per-seed evaluable parameters: a `TabularParams` pair of a Q-table and its
+    DFA, or a network's `nnx.GraphState`. It is NOT a `GreedyPolicy`'s `P`, which is the state the policy
     carries between steps of one episode.
     """
 

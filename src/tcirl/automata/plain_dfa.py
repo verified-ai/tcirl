@@ -51,17 +51,6 @@ class PlainDFA:
         )
 
 
-def trivial_rejecting_dfa(num_symbols: int) -> DFA:
-    """1-state DFA that rejects everything (no accepting states)."""
-    return DFA(
-        num_states=1,
-        num_symbols=num_symbols,
-        transitions={(0, s): 0 for s in range(num_symbols)},
-        accepting_states=frozenset(),
-        valid_symbols=None,
-    )
-
-
 jax.tree_util.register_dataclass(
     PlainDFA,
     data_fields=["delta", "accepting", "num_states"],

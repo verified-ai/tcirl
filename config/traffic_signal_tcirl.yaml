@@ -43,6 +43,10 @@ params:
   max_episode_steps: 100
   # The initial value of every Q-table entry.
   q_init: 60.0
+  # Counterfactual updates, which the paper's method and its Q-learning reference leave off and the
+  # paper's ablation of counterfactual updates turns on. When on, each transition also updates the
+  # entry of its action at every other state of the agent's DFA with the phase of the visited state.
+  counterfactual: false
 cadence:
   # Training metrics are logged every `log_interval` steps. `stop_interval` and the evaluation
   # spacing must be multiples of it.
@@ -56,9 +60,11 @@ env:
   # The cause is the alternating word that `difficulty` builds: hold, advance, hold, advance, hold,
   # advance. A policy that advances every other step completes it at step 6.
   difficulty: 6
-  # The flow. In Phase 1 each green intersection offers Geom(`p_rej_depart`) cars to move on and
+  # The flow. In Phase 1 each green intersection offers a geometric number of cars to move on, the
+  # count of consecutive Bernoulli(`p_rej_depart`) successes before the first failure, and
   # Bernoulli(`p_rej_arrive`) cars arrive at the first queue. In Phase 2 these are
-  # Bernoulli(`p_acc_depart`) and Geom(`p_acc_arrive`), so arrivals become bursty.
+  # Bernoulli(`p_acc_depart`) and the geometric count of Bernoulli(`p_acc_arrive`) successes, so
+  # arrivals become bursty. Both geometric counts are capped at `q_max`.
   p_rej_depart: 0.7
   p_rej_arrive: 0.5
   p_acc_depart: 0.5
@@ -73,10 +79,6 @@ tcirl:
   # The largest hypothesis the SAT search tries. No hypothesis exceeds the smallest successor-closed
   # DFA of the cause, which has 5 states in genetic therapy and 7 in traffic.
   max_hypothesis_states: 10
-  # The paper's method: the hypothesis starts as the trivial rejecting DFA and is re-inferred by SAT
-  # whenever a completed episode contradicts it. The reference modes `oracle` and `none` are set on
-  # the command line.
-  inference_mode: sat
   # Hold is part of the cause's word, so it does not self-loop and stays in the traces.
   self_loop_symbol_enabled: false
   # Optional clause groups of the SAT encoding: the BFS symmetry-breaking predicates of Ulyantsev et
@@ -85,10 +87,6 @@ tcirl:
   symmetry_breaking: true
   initial_rejecting: false
   # At a re-inference, every state of the new hypothesis takes the Q-values of the state of the old
-  # hypothesis that the most prefixes of the counterexamples lead to together with it. The appendix
-  # ablation runs the rules "none" and "exact".
+  # hypothesis that the most prefixes of the counterexamples lead to together with it. The paper's
+  # ablation of value transfer runs the rules "none" and "exact".
   value_transfer: counterexample
-  # Counterfactual updates, an ablation of the appendix that the paper's method leaves off. When on,
-  # each transition also updates every hypothesis state whose acceptance equals that of the visited
-  # state.
-  counterfactual: false

@@ -1,13 +1,12 @@
 """The per-step training quantities every iteration primitive emits, and nothing else.
 
-`qrm_core.make_iteration` (tabular) and `dqn_core.make_dqn_iteration` (deep) are different
-algorithms over different state, but the training curves are the same six
-quantities in both. Declaring them as one protocol is what lets `qrm_logging.log_batch`, the
-`BatchLogger`, the recorder, the registry and the exporter serve both arms with no second path.
+`agents.tabular.make_iteration` (tabular) and `dqn_core.make_dqn_iteration` (deep) are different
+algorithms over different state, but the training curves are the same quantities in both.
+Declaring them as one protocol is what lets `qrm_logging.log_batch`, the `BatchLogger`, the
+recorder, the registry and the exporter serve both arms with no second path.
 
-`BatchOutputs` (the tabular one) carries automaton fields on top; it satisfies this protocol
-because a NamedTuple's fields are read-only properties. The deep iteration has no automaton, so it
-emits the concrete `StepOutputs`.
+`TabularOutputs` carries the tabular learner's fields on top; it satisfies this protocol because a
+NamedTuple's fields are read-only properties. The deep iteration emits the concrete `StepOutputs`.
 """
 
 from __future__ import annotations

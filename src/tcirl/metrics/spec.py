@@ -332,10 +332,6 @@ class MetricRegistry:
             )
         return not spec.hidden
 
-    def merged_with(self, override: MetricRegistry) -> MetricRegistry:
-        """Compose two registries, `override` winning on key collisions."""
-        return self.extended(override.metrics)
-
     def extended(self, extra: tuple[Metric, ...]) -> MetricRegistry:
         """Return a new registry with `extra` added/overridden.
 
@@ -504,9 +500,12 @@ BASE_SPECS = MetricRegistry(
     )
 )
 
-# Additional metrics the tabular agents emit on top of the universal set. Each Q-table entry has its
-# own step size, a function of its own update count (`rl.schedules.rescaled_linear_step_size`), so
-# no run-global rate exists; `train/step_size` is the mean step size of the window's updates.
+# Additional metrics the tabular learner emits on top of the universal set. Each Q-table entry has
+# its own step size, a function of its own update count (`rl.schedules.rescaled_linear_step_size`),
+# so no run-global rate exists; `train/step_size` is the mean step size of the window's updates.
+# `train/updated_states` is the mean number of Q-table entries one transition updates: 1 without
+# counterfactual updates, and with them the number of states of the agent's DFA in the visited
+# state's phase.
 BASE_TABULAR_SPECS = BASE_SPECS.extended(
     (
         WindowedMetric(
@@ -515,21 +514,14 @@ BASE_TABULAR_SPECS = BASE_SPECS.extended(
             signals=("step_size",),
             display=SeedDisplay(stats=("mean",), console="mean", fmt=".4f", short="alpha"),
         ),
+        WindowedMetric(
+            key="train/updated_states",
+            category="step_mean",
+            signals=("updated_states",),
+            display=SeedDisplay(stats=("mean",), console=None, fmt=".2f"),
+        ),
     )
 )
-
-# The metric TCIRL emits on top of the tabular set: the mean number of Q-table entries one transition
-# updates, 1 without counterfactual updates, and with them the number of live hypothesis states in
-# the visited state's acceptance class.
-TCIRL_TRAIN_METRICS = (
-    WindowedMetric(
-        key="train/updated_states",
-        category="step_mean",
-        signals=("updated_states",),
-        display=SeedDisplay(stats=("mean",), console=None, fmt=".2f"),
-    ),
-)
-BASE_TCIRL_SPECS = BASE_TABULAR_SPECS.extended(TCIRL_TRAIN_METRICS)
 
 # Additional metrics the deep DQN baseline emits on top of the universal set. `train/loss` and
 # `train/grad_norm` are per-step signals that are NaN on env steps with no gradient step, so the

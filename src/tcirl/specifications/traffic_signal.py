@@ -30,7 +30,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from tcirl.alphabet import OrderedAlphabet
+import numpy as np
+
+from tcirl.alphabet import OrderedAlphabet, projection_table
 from tcirl.automata.conversion import bitmask_to_ordered
 from tcirl.automata.dfa import DFA, validate_cause_dfa
 from tcirl.formulas.bool_patterns import mutual_exclusion_filter
@@ -85,7 +87,6 @@ MULTI_ARR = "multi_arr"
 
 ACTION_PROPS: tuple[str, ...] = ("advance",)
 EFFECT_PROPS: tuple[str, ...] = ("multi_arr", "multi_dep")
-ALL_OBS_PROPS: tuple[str, ...] = (*ACTION_PROPS, *EFFECT_PROPS)
 
 # Single action prop -> mutual exclusion is vacuously true.
 ACTION_FILTER: BoolSyntax[str] = BoolTop()
@@ -109,6 +110,11 @@ class TrafficSignalSpec:
     action_to_obs_multi_arr: dict[int, int]
     action_to_obs_multi_dep: dict[int, int]
     perf: dict[str, float]
+
+    @property
+    def label_projection(self) -> np.ndarray:
+        """The action symbol of each observation label, the symbol the cause and every hypothesis read."""
+        return projection_table(self.combined_to_action, self.obs_alphabet.num_symbols)
 
 
 def create_traffic_signal_cause(difficulty: int) -> TrafficSignalSpec:
@@ -183,24 +189,4 @@ def create_traffic_signal_cause(difficulty: int) -> TrafficSignalSpec:
         action_to_obs_multi_arr=action_to_obs_multi_arr,
         action_to_obs_multi_dep=action_to_obs_multi_dep,
         perf=perf,
-    )
-
-
-def expand_cause_to_obs(
-    cause_dfa: DFA,
-    combined_to_action: dict[int, int],
-    obs_num_symbols: int,
-) -> DFA:
-    """Expand a cause DFA from action alphabet to obs alphabet via projection."""
-    transitions: dict[tuple[int, int], int] = {}
-    for obs_id in range(obs_num_symbols):
-        action_id = combined_to_action[obs_id]
-        for state in range(cause_dfa.num_states):
-            transitions[(state, obs_id)] = cause_dfa.transitions[(state, action_id)]
-    return DFA(
-        num_states=cause_dfa.num_states,
-        num_symbols=obs_num_symbols,
-        accepting_states=cause_dfa.accepting_states,
-        transitions=transitions,
-        valid_symbols=None,
     )

@@ -39,7 +39,7 @@ The paper proves that the hypothesis converges almost surely to a DFA whose lang
 | | genetic therapy | traffic signal |
 | --- | --- | --- |
 | state | position on a 5x5 grid, symptom level, harm level | three queues of cars, the red light, a cooldown |
-| hidden cause | visit gene sites G1, G2, G1, G4 in this order | three consecutive hold-advance cycles of the lights |
+| hidden cause | visit gene sites G1, G2, G1, G4 in this order | three consecutive hold-advance pairs of the lights |
 | Phase 2 | symptoms recede, so the agent should trigger the cause | arrivals become bursty, so the agent should avoid the cause |
 | markers | a symptom increase (Phase 1), a spontaneous recovery (Phase 2) | 2 or more cars leave the last queue in one step (Phase 1), 2 or more arrive at the first (Phase 2) |
 
@@ -122,11 +122,11 @@ These environment variables adjust the pipeline:
 
 | path                                                | contents                                                                |
 | --------------------------------------------------- | ----------------------------------------------------------------------- |
-| `src/tcirl/agents/`                                 | TCIRL and the DQN baseline                                              |
+| `src/tcirl/agents/`                                 | the tabular learner of Q-learning and TCIRL, and the DQN baseline       |
 | `src/tcirl/envs/`                                   | the genetic-therapy gridworld and the traffic-signal pipeline           |
 | `src/tcirl/specifications/`                         | the hidden causes and the marker alphabets of both case studies         |
 | `src/tcirl/inference/`                              | the counterexample check and the SAT synthesis of the cause DFA         |
-| `src/tcirl/rl/`                                     | tabular Q-learning, the DQN iteration, and the greedy evaluation        |
+| `src/tcirl/rl/`                                     | the DQN iteration, the greedy evaluation and the environment types      |
 | `src/tcirl/metrics/`, `src/tcirl/logging/`          | metric definitions, the bootstrap statistics, and the per-seed records  |
 | `src/tcirl/export.py`, `src/tcirl/paper_results.py` | the export of per-seed curves and the data of the paper's figures       |
 | `config/`                                           | the configurations of every agent in both case studies                  |

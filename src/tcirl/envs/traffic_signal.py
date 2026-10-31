@@ -48,6 +48,8 @@ Step mechanics:
      REJECT: a draw ~ Bernoulli(p_rej_arrive).  At most 1 car.
      ACCEPT: a draw ~ Geom(p_acc_arrive).  Can be 0, 1, 2, ...
      A = the cars that enter q0.
+  Geom(p) is the number of consecutive Bernoulli(p) successes before the first failure, capped at
+  q_max, which is the number of failures before the first success of Bernoulli(1 - p) trials.
   No car is lost and no queue exceeds q_max, so the queues before and after a step, with the
   red light after it, determine A, D and every flow by conservation of cars.
   6. Dense reward: 1.0 - max(q0,q1,q2) / q_max, or 0.0 on termination.
@@ -357,19 +359,12 @@ class TrafficSignalEnv:
             label=initial_label,
         )
 
-    @property
-    def is_time_indexed(self) -> bool:
-        return False
-
     def render_map(self) -> str:
         return self.render(self.reset(jax.random.key(0)))
 
-    def get_size_hint(self) -> int | None:
-        return None
-
     def step(
         self, state: EnvState, action: jax.Array, key: jax.Array
-    ) -> tuple[EnvState, jax.Array, jax.Array, jax.Array, jax.Array]:
+    ) -> tuple[EnvState, jax.Array, jax.Array]:
         q0, q1, q2 = state.indices[0], state.indices[1], state.indices[2]
         blocked = state.indices[self.blocked_index]
         cooldown = state.indices[self.cooldown_index]
@@ -480,8 +475,7 @@ class TrafficSignalEnv:
             step_count=state.step_count + 1,
             label=combined_label,
         )
-        never = jnp.asarray(False)
-        return new_state, reward, terminated, never, never
+        return new_state, reward, terminated
 
     def action_mask(self, state: EnvState) -> jax.Array:
         # An illegal advance ends the episode instead of being masked, so every action is available.

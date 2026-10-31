@@ -3,11 +3,10 @@
 Every arm is scored the same way, so there is one implementation and the arms differ only in the
 policy handed to it. A policy is three closures over that seed's parameters -- what extra state the
 agent carries between steps, how it picks an action, and how that state advances -- which is
-exactly the difference between the three arms:
+exactly the difference between the two learners:
 
-- Q-learning: no extra state; the action is the argmax of the Q-row at the observable state.
-- TCIRL: the hypothesis cause-DFA state; the Q-row is indexed by it as well, and it advances
-  through the hypothesis delta on the emitted label.
+- Tabular (Q-learning and TCIRL): the state of the agent's DFA; the action is the argmax of the
+  Q-row at the observable state and that DFA state, which advances on the emitted label.
 - DQN: the window of the last k observation frames; the action is the argmax of the network's
   output on the encoded window, and the window shifts by one.
 
@@ -134,7 +133,7 @@ def build_greedy_eval[S, P](
             has_actions = jnp.any(mask)
             action = policy.select(params, policy_state, state, tk)
 
-            new_state, reward, terminated, _aut_terminated, _aut_crashed = env.step(
+            new_state, reward, terminated = env.step(
                 state, action, sk
             )
             terminated = terminated | ~has_actions

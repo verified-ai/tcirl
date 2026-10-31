@@ -47,6 +47,10 @@ params:
   max_episode_steps: 100
   # The initial value of every Q-table entry.
   q_init: 25.0
+  # Counterfactual updates, which the paper's method and its Q-learning reference leave off and the
+  # paper's ablation of counterfactual updates turns on. When on, each transition also updates the
+  # entry of its action at every other state of the agent's DFA with the phase of the visited state.
+  counterfactual: false
 cadence:
   # Training metrics are logged every `log_interval` steps. `stop_interval` and the evaluation
   # spacing must be multiples of it.

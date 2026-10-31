@@ -74,9 +74,11 @@ env:
   # The cause is the alternating word that `difficulty` builds: hold, advance, hold, advance, hold,
   # advance. A policy that advances every other step completes it at step 6.
   difficulty: 6
-  # The flow. In Phase 1 each green intersection offers Geom(`p_rej_depart`) cars to move on and
+  # The flow. In Phase 1 each green intersection offers a geometric number of cars to move on, the
+  # count of consecutive Bernoulli(`p_rej_depart`) successes before the first failure, and
   # Bernoulli(`p_rej_arrive`) cars arrive at the first queue. In Phase 2 these are
-  # Bernoulli(`p_acc_depart`) and Geom(`p_acc_arrive`), so arrivals become bursty.
+  # Bernoulli(`p_acc_depart`) and the geometric count of Bernoulli(`p_acc_arrive`) successes, so
+  # arrivals become bursty. Both geometric counts are capped at `q_max`.
   p_rej_depart: 0.7
   p_rej_arrive: 0.5
   p_acc_depart: 0.5
