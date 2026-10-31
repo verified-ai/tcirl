@@ -1,10 +1,10 @@
 algo: dqn
 # The traffic case study of the paper, an avoidance task.
 #
-# Three hold-advance pairs in a row (wait, switch, wait, switch, wait, switch) fire the hidden
+# Three hold-advance pairs in a row (hold, advance, hold, advance, hold, advance) fire the hidden
 # cause, and after that the corridor congests for the rest of the episode. The agent avoids the
-# cause by waiting one extra step after every second switch. The reward per step is
-# `1 - max_i q_i / 8`, where q_i are the queue lengths.
+# cause by holding one extra step after every second advance. The reward per step is
+# `1 - max_i y_i / 8`, where y_0, y_1 and y_2 are the queue lengths.
 # The paper's DQN arms do not observe the cause state; `--cause_known` adds it to the network's
 # input.
 cause_known: false
@@ -78,7 +78,8 @@ env:
   # count of consecutive Bernoulli(`p_rej_depart`) successes before the first failure, and
   # Bernoulli(`p_rej_arrive`) cars arrive at the first queue. In Phase 2 these are
   # Bernoulli(`p_acc_depart`) and the geometric count of Bernoulli(`p_acc_arrive`) successes, so
-  # arrivals become bursty. Both geometric counts are capped at `q_max`.
+  # arrivals become bursty. Both geometric counts are capped at `q_max`; the paper writes them as
+  # Geom(1 - `p_rej_depart`) and Geom(1 - `p_acc_arrive`), the failures before the first success.
   p_rej_depart: 0.7
   p_rej_arrive: 0.5
   p_acc_depart: 0.5
@@ -87,5 +88,6 @@ env:
   q_max: 8
   # Cars in every queue at the start of an episode.
   queue_init: 2
-  # Steps to hold after an advance. An advance during the cooldown ends the episode with reward 0.
+  # The mandatory hold: the steps to hold after an advance. An advance during it ends the episode
+  # with reward 0.
   cooldown_max: 1

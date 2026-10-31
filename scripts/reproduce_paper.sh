@@ -1,5 +1,6 @@
 #!/bin/bash
-# Every result the paper prints, from training to its `results/` tree, in one call.
+# Trains every arm that the paper plots and writes the data of its figures and tables, from training
+# to its `results/` tree, in one call.
 #
 # Usage: scripts/reproduce_paper.sh <suffix>
 #
@@ -28,7 +29,7 @@ for domain in gene_editing traffic_signal; do
 done
 
 TRAFFIC_SNAPSHOT="$ROOT_DIR/tmp/results/traffic_signal/tcirl-traffic_signal-${SUFFIX}/latest"
-bash "$ROOT_DIR/scripts/traffic_signal/cadence.sh" "$TRAFFIC_SNAPSHOT/cadence" --training-project "tcirl-traffic_signal-${SUFFIX}"
+bash "$ROOT_DIR/scripts/traffic_signal/cycles.sh" "$TRAFFIC_SNAPSHOT/cycles" --training-project "tcirl-traffic_signal-${SUFFIX}"
 
 echo "############ the paper's results tree ############"
 PROJECTION_ARGS=(--project "tcirl-{domain}-${SUFFIX}")

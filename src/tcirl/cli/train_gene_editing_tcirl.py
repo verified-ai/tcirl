@@ -9,7 +9,7 @@ def main() -> None:
     config = parse_config(
         GeneEditingTcirlConfig,
         CONFIG_DIR / "gene_editing_tcirl.yaml",
-        "TCIRL on gene-editing gridworld",
+        "TCIRL on genetic-therapy gridworld",
     )
     train_tcirl(config, lambda: gene_editing_case_study(config.env))
 

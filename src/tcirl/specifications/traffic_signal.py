@@ -7,10 +7,10 @@ block) and advance (rotate the block to the next intersection) -- control
 traffic flow.
 
 The hidden temporal cause fires when the agent completes three hold-advance
-cycles without interruption: h,a,h,a,h,a.  This is exactly the optimal
-pattern for a cause-unaware agent that only respects the hard cooldown limit
+pairs without interruption: h,a,h,a,h,a.  This is exactly the optimal
+pattern for a cause-unaware agent that only respects the mandatory hold
 (advance every other step).  Avoiding the cause requires inserting an extra
-hold every few cycles to break the pattern.
+hold after every second advance to break the pattern.
 
 Two alphabets:
   - Action alphabet: {advance} -> 2 symbols (advance or hold=empty).

@@ -1,11 +1,12 @@
 algo: dqn
 # The genetic-therapy case study of the paper.
 #
-# The agent walks a 5x5 grid and applies medicine on cell `e` to hold a symptom level down. A hidden
-# cause fires when it steps on the cells `a`, `b`, `a`, `d` in that order, and after that the
-# symptom falls on its own, so the cause is a target the agent has to reach. Cell `c` is not part of
-# the cause. The reward per step is `1 - D/9`, where D is the symptom level. The paper's DQN arms do
-# not observe the cause state; `--cause_known` adds it to the network's input.
+# The agent walks a 5x5 grid and applies medicine on cell `e` (the paper's M) to hold a symptom
+# level down. A hidden cause fires when it steps on the gene sites `a`, `b`, `a`, `d` (G1, G2, G1,
+# G4) in that order, and after that the symptom falls on its own, so the cause is a target the agent
+# has to reach. Gene site `c` (G3) is not part of the cause. The reward per step is `1 - D/9`, where
+# D is the symptom level. The paper's DQN arms do not observe the cause state; `--cause_known` adds
+# it to the network's input.
 cause_known: false
 run:
   # The process seed, which `PYTHONHASHSEED` has to match.

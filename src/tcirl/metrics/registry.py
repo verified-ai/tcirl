@@ -1,7 +1,7 @@
 """tcirl's metric catalog: the shared base defaults plus the cause-phase evaluation metrics.
 
 Every arm of both domains logs the same cause metrics at each evaluation point, because the paper's figure of
-evaluation trajectories that reach Phase 2 and its phase claims compare exactly those numbers across arms: `eval_final/frac_in_accept` is the
+the episodes in Phase 2 and its phase claims compare exactly those numbers across arms: `eval_final/frac_in_accept` is the
 share of evaluation steps spent in Phase 2, and `frac_x_a` / `frac_x_r` are the marker rates that
 say whether the phase was observable at all. They are `EvalMetric`s, so they travel the one eval
 channel (`logging.recorder.log_eval_metrics`) into `metric_curves/*.json` and out through the one
@@ -48,7 +48,7 @@ _CAUSE_EVAL_METRICS: tuple[Metric, ...] = (
     ),
     # The share of evaluation EPISODES that reach Phase 2 at all. Acceptance is absorbing, so this
     # is equally "still in the accepting state at the episode's last step", which is what the
-    # paper's figure "Evaluation trajectories that reach Phase 2 (%)" reports.
+    # paper's figure "Episodes in Phase 2 (%)" reports.
     EvalMetric(
         key="eval_final/frac_episodes_in_accept",
         display=SeedDisplay(stats=("mean",), console="mean", fmt=".4f", short="ep_accept"),
@@ -101,7 +101,7 @@ _CAUSE_EVAL_METRICS: tuple[Metric, ...] = (
     ),
 )
 
-# Gene editing: the symptom and medicine-harm levels averaged over the evaluation episodes.
+# Genetic therapy: the symptom and medicine-harm levels averaged over the evaluation episodes.
 _GENE_EVAL_METRICS: tuple[Metric, ...] = (
     EvalMetric(
         key="eval_final/mean_disease",
@@ -126,7 +126,7 @@ _TRAFFIC_EVAL_METRICS: tuple[Metric, ...] = (
 
 
 def gene_editing_specs(*, deep: bool = False) -> MetricRegistry:
-    """The gene-editing registry: base defaults + cause-phase and symptom eval metrics."""
+    """The genetic-therapy registry: base defaults + cause-phase and symptom eval metrics."""
     base = BASE_DQN_SPECS if deep else BASE_TABULAR_SPECS
     return base.extended((*_CAUSE_EVAL_METRICS, *_GENE_EVAL_METRICS))
 

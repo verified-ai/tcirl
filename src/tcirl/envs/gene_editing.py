@@ -1,4 +1,4 @@
-"""Gene-editing environment: gridworld x hidden cause DFA x disease x harm.
+"""Genetic-therapy environment: gridworld x hidden cause DFA x disease x harm.
 
 The full MDP state is (row, col, disease, harm, cause_state, obs_label), with:
   G = gridworld cells (row, col)

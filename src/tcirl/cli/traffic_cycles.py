@@ -11,13 +11,13 @@ from tcirl.export_runs import single_finished_run, survey_local_runs
 from tcirl.jax_platform import pin_jax_to_cpu
 from tcirl.path_consts import CONFIG_DIR, ROOT_DIR
 from tcirl.specifications.traffic_signal import create_traffic_signal_cause
-from tcirl.traffic_cadence import (
-    CadenceSettings,
-    screen_cadences,
+from tcirl.traffic_cycles import (
+    CycleSettings,
+    screen_cycles,
     validate_comparison_settings,
-    write_cadence_optimum,
-    write_cadence_results,
-    write_cadence_source_records,
+    write_cycle_optimum,
+    write_cycle_results,
+    write_cycle_source_records,
 )
 
 
@@ -60,7 +60,7 @@ def main() -> None:
             argv=[],
         )
         validate_comparison_settings(config, trained)
-    settings = CadenceSettings(
+    settings = CycleSettings(
         max_period=args.max_period,
         horizon=config.params.max_episode_steps,
         coarse_episodes=args.coarse_episodes,
@@ -71,12 +71,12 @@ def main() -> None:
     )
     spec = create_traffic_signal_cause(config.env.difficulty)
     env = TrafficSignalEnv.from_config(config.env, spec, cause_known=False)
-    cells, candidates = screen_cadences(env, settings)
-    write_cadence_results(args.output, cells)
-    optimum, exact = write_cadence_optimum(
+    cells, candidates = screen_cycles(env, settings)
+    write_cycle_results(args.output, cells)
+    optimum, exact = write_cycle_optimum(
         args.output, env, cells, settings.horizon, gamma=config.params.gamma
     )
-    write_cadence_source_records(
+    write_cycle_source_records(
         args.output,
         config=config,
         settings=settings,
@@ -86,9 +86,9 @@ def main() -> None:
             "run",
             "python",
             "-m",
-            "tcirl.cli.traffic_cadence",
+            "tcirl.cli.traffic_cycles",
             "--output",
-            "tmp/traffic_cadence",
+            "tmp/traffic_cycles",
             "--config_path",
             str(config_path.resolve().relative_to(ROOT_DIR.resolve())),
             "--max-period",

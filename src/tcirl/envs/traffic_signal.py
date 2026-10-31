@@ -18,7 +18,7 @@ Observable dimensions come before hidden ones in EnvState.indices.
 
 Actions: 0 = hold, 1 = advance.
 
-Hard constraint (cooldown timer):
+Hard constraint (the mandatory hold, a cooldown timer):
   Advance while cooldown > 0 => immediate termination with reward 0.
   cooldown_max = 1, so the fastest legal cycle is advance-hold-advance-hold
   (period 2).

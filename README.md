@@ -38,15 +38,17 @@ The paper proves that the hypothesis converges almost surely to a DFA whose lang
 
 | | genetic therapy | traffic signal |
 | --- | --- | --- |
-| state | position on a 5x5 grid, symptom level, harm level | three queues of cars, the red light, a cooldown |
+| state | position on a 5x5 grid, symptom level, harm level | three queues of cars, the red light, the mandatory hold |
 | hidden cause | visit gene sites G1, G2, G1, G4 in this order | three consecutive hold-advance pairs of the lights |
 | Phase 2 | symptoms recede, so the agent should trigger the cause | arrivals become bursty, so the agent should avoid the cause |
 | markers | a symptom increase (Phase 1), a spontaneous recovery (Phase 2) | 2 or more cars leave the last queue in one step (Phase 1), 2 or more arrive at the first (Phase 2) |
 
+Configurations and result directories name the two case studies `gene_editing` and `traffic_signal`, and the training commands `gene_editing` and `traffic`.
+
 TCIRL matches Q-learning that observes the true cause state in both domains, and it outperforms Q-learning without the cause state and a Double DQN over a window of the last four frames or of the current frame alone.
 Final evaluation return per episode (out of 100, mean over 50 seeds):
 
-| | TCIRL | Q-learning, cause known | Q-learning, cause unknown | DQN (4 frames) | DQN (1 frame) |
+| | TCIRL | Q-learning (cause known) | Q-learning (cause unknown) | DQN (4) | DQN (1) |
 | --- | --- | --- | --- | --- | --- |
 | genetic therapy | 83.6 | 83.7 | 32.0 | 38.1 | 10.6 |
 | traffic signal | 64.2 | 64.3 | 21.2 | 46.1 | 29.3 |
@@ -98,10 +100,20 @@ It writes every per-seed curve to `tmp/results/` and the data of the paper's fig
 It runs from a clean commit of `main`, which every result records.
 Without a W&B account, run it offline with `TCIRL_TRAIN_ARGS=--noupload`.
 
-The paper's cycle benchmarks in traffic compute the exact returns of fixed light cycles, on a CPU and without training:
+Each arm is a variant of the paper:
+
+| arm | variant in the paper |
+| --- | --- |
+| `tcirl-sat` | TCIRL |
+| `q_learning-cause_known`, `q_learning-cause_unknown` | Q-learning (cause known), Q-learning (cause unknown) |
+| `dqn-cause_unknown_4`, `dqn-cause_unknown_1` | DQN (4), DQN (1) |
+| `tcirl-sat-no_transfer`, `tcirl-sat-exact_transfer` | TCIRL-None, TCIRL-Exact |
+| `tcirl-sat-counterfactual`, `q_learning-cause_known-counterfactual` | TCIRL, counterfactual; Q-learning (cause known), counterfactual |
+
+The paper's cycle benchmarks in traffic compute the exact returns of the best tested fixed action cycles and of the optimal policy, on a CPU and without training:
 
 ```bash
-bash scripts/traffic_signal/cadence.sh tmp/traffic_cadence
+bash scripts/traffic_signal/cycles.sh tmp/traffic_cycles
 ```
 
 These environment variables adjust the pipeline:
@@ -138,7 +150,7 @@ These environment variables adjust the pipeline:
 ```bibtex
 @misc{corazza2026temporalcausalinferencereinforcementlearning,
       title={Temporal-Causal Inference for Reinforcement Learning via Automata Learning},
-      author={Jan Corazza and Daniil Kaminskyi and Simon Lutz and Patrick Nossol and Hadi Partovi Aria and Zhe Xu and Daniel Neider},
+      author={Jan Corazza and Daniil Kaminskyi and Simon Lutz and Patrick Nossol and Partovi Aria, Hadi and Zhe Xu and Daniel Neider},
       year={2026},
       eprint={2609.07461},
       archivePrefix={arXiv},

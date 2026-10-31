@@ -17,7 +17,7 @@ observed transition is a sample from the kernel of each of these states exactly 
 the kernel of the visited state. The set depends only on the visited state, so it is fixed before
 the transition is sampled.
 
-Each Q-table entry's step size is `rescaled_linear_step_size` of its own update count. The training
+Each Q-table entry's learning rate is `rescaled_linear_step_size` of its own update count. The training
 loop also drives the run's evaluation through the shared greedy evaluation, whose policy reads the
 same product state (`TabularPolicy`).
 """

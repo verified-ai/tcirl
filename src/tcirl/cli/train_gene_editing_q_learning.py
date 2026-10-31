@@ -9,7 +9,7 @@ def main() -> None:
     config = parse_config(
         GeneEditingQLConfig,
         CONFIG_DIR / "gene_editing_q_learning.yaml",
-        "Q-learning on gene-editing gridworld",
+        "Q-learning on genetic-therapy gridworld",
     )
     train_q_learning(config, lambda: gene_editing_case_study(config.env))
 

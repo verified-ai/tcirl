@@ -285,7 +285,7 @@ class DqnParams:
 # ---------------------------------------------------------------------------
 @dataclass(frozen=True, slots=True, kw_only=True)
 class GeneEditingConfig:
-    """Gene-editing environment parameters."""
+    """Genetic-therapy environment parameters."""
 
     grid_path: Path
     slip_prob: float
@@ -318,7 +318,7 @@ class GeneEditingConfig:
 # ---------------------------------------------------------------------------
 @dataclass(slots=True, kw_only=True)
 class GeneEditingQLConfig(Serializable):
-    """Config for Q-learning on gene-editing gridworld."""
+    """Config for Q-learning on genetic-therapy gridworld."""
 
     algo: Literal["q_learning"]
     cause_known: bool
@@ -342,7 +342,7 @@ class GeneEditingQLConfig(Serializable):
 
 @dataclass(slots=True, kw_only=True)
 class GeneEditingTcirlConfig(Serializable):
-    """Config for TCIRL on gene-editing gridworld."""
+    """Config for TCIRL on genetic-therapy gridworld."""
 
     algo: Literal["tcirl"]
     run: RunConfig
@@ -362,7 +362,7 @@ class GeneEditingTcirlConfig(Serializable):
 
 @dataclass(slots=True, kw_only=True)
 class GeneEditingDqnConfig(Serializable):
-    """Config for the DQN baseline on the gene-editing gridworld."""
+    """Config for the DQN baseline on the genetic-therapy gridworld."""
 
     algo: Literal["dqn"]
     cause_known: bool
@@ -493,11 +493,11 @@ type AnyConfig = QLearningConfig | TcirlConfig | DqnConfig
 # The paper's environments
 # ---------------------------------------------------------------------------
 def official_gene_editing_env_config() -> GeneEditingConfig:
-    """The `env` section of the shipped gene-editing configs, with its grid path resolved against the repository root."""
+    """The `env` section of the shipped genetic-therapy configs, with its grid path resolved against the repository root."""
     env = parse_config(
         GeneEditingTcirlConfig,
         CONFIG_DIR / "gene_editing_tcirl.yaml",
-        "the paper's gene-editing environment",
+        "the paper's genetic-therapy environment",
         argv=[],
     ).env
     return replace(env, grid_path=ROOT_DIR / env.grid_path)

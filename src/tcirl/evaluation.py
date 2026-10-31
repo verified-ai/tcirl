@@ -6,7 +6,7 @@ else:
 
 - the per-seed `eval_final/*` values, handed to the one eval channel
   (`tcirl.logging.recorder.log_eval_metrics`), which validates them against the run's registry and
-  persists them per seed. The paper's figure of evaluation trajectories that reach Phase 2 is
+  persists them per seed. The paper's figure of the episodes in Phase 2 is
   `eval_final/frac_episodes_in_accept` times 100 per arm, and `tcirl.paper_results` assembles it
   from those persisted values.
 - the per-seed per-timestep `trajectories/*` curves, handed to a recorder whose x axis is the
@@ -45,7 +45,7 @@ from tcirl.metrics.stats import aggregate_stats, compute_mean
 from tcirl.rl.common.eval_schedule import EvalSchedule
 from tcirl.rl.common.greedy_eval import EvalRollout
 
-# Gene-editing trajectory columns, in the order the CLI passes `trajectory_indices`.
+# Genetic-therapy trajectory columns, in the order the CLI passes `trajectory_indices`.
 _DISEASE_COL = 0
 _HARM_COL = 1
 _GE_CAUSE_COL = 2
@@ -155,7 +155,7 @@ def _per_seed_mean(vals: jax.Array, active_f: jax.Array, active_sum: jax.Array) 
 def _per_seed_episode_fraction(vals: jax.Array, active_mask: jax.Array) -> jax.Array:
     """One value per seed: the share of its episodes in which `vals` is ever nonzero.
 
-    For `in_accept` this is the paper's figure of "evaluation trajectories that reach Phase 2" --
+    For `in_accept` this is the paper's figure "Episodes in Phase 2 (%)" --
     and it is NOT the share of STEPS in Phase 2, which an episode that fires the cause halfway
     through would report as 0.5. Acceptance is absorbing, so "ever" and "at the last step" agree;
     "ever" is computed here because it does not depend on finding the last active step.
@@ -534,7 +534,7 @@ def gene_editing_domain(
     x_r_obs_ids: frozenset[int],
     x_a_obs_ids: frozenset[int],
 ) -> EvalDomain:
-    """Gene editing: the symptom and medicine-harm levels beside the shared cause metrics."""
+    """Genetic therapy: the symptom and medicine-harm levels beside the shared cause metrics."""
 
     def state_metrics(trajectories: jax.Array) -> dict[str, jax.Array]:
         return {

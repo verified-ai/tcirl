@@ -9,7 +9,7 @@ def main() -> None:
     config = parse_config(
         GeneEditingDqnConfig,
         CONFIG_DIR / "gene_editing_dqn.yaml",
-        "DQN baseline on the gene-editing gridworld",
+        "DQN baseline on the genetic-therapy gridworld",
     )
     train_dqn(config, lambda: gene_editing_case_study(config.env))
 

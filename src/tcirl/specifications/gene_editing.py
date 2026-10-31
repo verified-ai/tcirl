@@ -1,6 +1,6 @@
-"""Gene-editing task specification: hidden cause DFA.
+"""Genetic-therapy task specification: hidden cause DFA.
 
-The environment models a gene-editing protocol with gene-modification sites
+The environment models a genetic-therapy protocol with gene-modification sites
 (a, b, d) on a gridworld plus a distractor gene c and a medicine cell e.
 The hidden cause requires visiting a, b, a, d in strict order:
 F(a & X(F(b & X(F(a & X(F(d))))))).
@@ -75,7 +75,7 @@ OBS_FILTER: BoolSyntax[str] = GRID_FILTER & EFFECT_FILTER
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class GeneEditingSpec:
-    """All specification data for the gene-editing environment."""
+    """All specification data for the genetic-therapy environment."""
 
     cause_dfa: DFA
     grid_alphabet: OrderedAlphabet[str]

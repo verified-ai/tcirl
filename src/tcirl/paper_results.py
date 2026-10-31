@@ -24,8 +24,8 @@ What the paper reads, and where each file comes from:
 centre column holds. `seed_scores.csv` is the one file that carries no statistic at all: it is the
 50 per-seed numbers themselves.
 
-THE STATISTIC. Every number the paper prints is one number per seed reduced across the 50 seeds,
-and that reduction is the plain MEAN for every metric without exception. The mean
+THE STATISTIC. Every number this projection writes is one number per seed reduced across the 50
+seeds, and that reduction is the plain MEAN for every metric without exception. The mean
 estimates the expected return over the seed distribution: the quantity reinforcement learning
 optimises, and the one a reader gets by training once and deploying. `PAPER_STATISTIC`
 records the choice per metric, so a new metric is classified before it is printed rather than
@@ -54,7 +54,7 @@ THREE KINDS OF QUANTITY. All three are reduced by the mean; they differ in what 
 THE DISTRIBUTION behind the mean appears in three outputs. `eval_final/mostly_in_accept` is the
 share of SEEDS that end most of their evaluation episodes in Phase 2; `seed_scores.csv` is every
 seed's final return, which the paper's figure of per-seed returns plots as 50 dots per arm; and the
-figure of evaluation trajectories that reach Phase 2 reports the share of EPISODES.
+figure of the episodes in Phase 2 reports the share of EPISODES.
 
 SMOOTHING: `tcirl.export.plotted_payloads` applies
 an exponential moving average per seed, over `cadence.smoothing_steps` env steps (10000 in both
@@ -196,7 +196,7 @@ PAPER_INTERVAL: dict[str, Interval] = {"eval_final_mostly_in_accept": "wilson"}
 # can put the panel's endpoint and the 50 dots behind it side by side.
 SEED_SCORE_METRIC = "eval_final_cumulative_reward"
 
-# The eval metric that the paper's figure of evaluation trajectories that reach Phase 2 reports: the share of evaluation EPISODES that reach Phase 2, as a
+# The eval metric that the paper's figure of the episodes in Phase 2 reports: the share of evaluation EPISODES that reach Phase 2, as a
 # percentage. An episode that fires the cause halfway through counts as one trajectory that reached
 # Phase 2.
 ACCEPT_METRIC = "eval_final_frac_episodes_in_accept"
@@ -440,7 +440,7 @@ def write_accept_table(snapshot: Path, target: Path) -> dict[str, AcceptShare]:
         arm_dir = snapshot / arm
         if not arm_dir.is_dir():
             raise MissingExportError(
-                f"{snapshot} has no directory for arm {arm!r}; the figure of evaluation trajectories that reach Phase 2 needs all "
+                f"{snapshot} has no directory for arm {arm!r}; the figure of the episodes in Phase 2 needs all "
                 f"{len(ARM_TABLE_COLUMNS)} arms"
             )
         shares[column] = accept_share(arm_dir)
@@ -528,14 +528,14 @@ def write_seed_scores(snapshot: Path, target: Path, arms: dict[str, str]) -> int
 SOURCE_FILE = "source.yaml"
 # The domains whose final returns a table prints, as `final_returns.csv`: the paper's table of traffic cycles puts the learned traffic policies beside the cycles.
 FINAL_RETURN_DOMAINS = ("traffic_signal",)
-CADENCE_FILES = (
-    "cadence.csv",
-    "cadence_episodes.csv",
-    "cadence_optimum.csv",
+CYCLE_FILES = (
+    "cycles.csv",
+    "cycles_episodes.csv",
+    "cycles_optimum.csv",
     "stationary_policy.npz",
-    "cadence_source_records.json",
-    "cadence_uv.lock",
-    "cadence_source.patch",
+    "cycles_source_records.json",
+    "cycles_uv.lock",
+    "cycles_source.patch",
 )
 
 
@@ -545,25 +545,25 @@ def write_source(snapshot: Path, target: Path) -> None:
     target.write_text(f"snapshot: {json.dumps(place)}\n")
 
 
-def cadence_files(snapshot: Path) -> tuple[Path, ...]:
+def cycle_files(snapshot: Path) -> tuple[Path, ...]:
     """Validate the complete optional cycle export before a projection writes any result."""
-    source = snapshot / "cadence"
+    source = snapshot / "cycles"
     if not source.exists():
         return ()
-    missing = [name for name in CADENCE_FILES if not (source / name).is_file()]
+    missing = [name for name in CYCLE_FILES if not (source / name).is_file()]
     if missing:
         raise MissingExportError(
-            f"{source} lacks cadence export files {missing}; nothing was written"
+            f"{source} lacks cycle export files {missing}; nothing was written"
         )
-    metadata = json.loads((source / "cadence_source_records.json").read_text())
-    for name in CADENCE_FILES:
-        if name == "cadence_source_records.json":
+    metadata = json.loads((source / "cycles_source_records.json").read_text())
+    for name in CYCLE_FILES:
+        if name == "cycles_source_records.json":
             continue
         if sha256((source / name).read_bytes()).hexdigest() != metadata["files"][name]:
             raise MissingExportError(
-                f"{source / name} differs from its cadence source records; nothing was written"
+                f"{source / name} differs from its cycle source records; nothing was written"
             )
-    return tuple(source / name for name in CADENCE_FILES)
+    return tuple(source / name for name in CYCLE_FILES)
 
 
 def project_snapshot(snapshot: Path, domain: str, out_root: Path) -> list[ProjectedFile]:
@@ -588,7 +588,7 @@ def project_snapshot(snapshot: Path, domain: str, out_root: Path) -> list[Projec
     ]
     if missing_accept:
         raise MissingExportError(
-            f"arm(s) {missing_accept} recorded no {ACCEPT_METRIC}, so the figure of evaluation trajectories that reach Phase 2 cannot be "
+            f"arm(s) {missing_accept} recorded no {ACCEPT_METRIC}, so the figure of the episodes in Phase 2 cannot be "
             f"assembled; nothing was written"
         )
     # Check every curve the paper reads before writing any: a missing or unnamed curve in the fifth arm must not leave the first four written.
@@ -609,7 +609,7 @@ def project_snapshot(snapshot: Path, domain: str, out_root: Path) -> list[Projec
             final_interval(snapshot / arm, SEED_SCORE_METRIC)
     for arm in {arm for arms in ABLATION_TABLES.values() for arm in arms}:
         final_interval(snapshot / arm, SEED_SCORE_METRIC)
-    cycles = cadence_files(snapshot) if domain == "traffic_signal" else ()
+    cycles = cycle_files(snapshot) if domain == "traffic_signal" else ()
     domain_out = out_root / domain
     # A projection that fails after its first write must not leave the previous snapshot's name beside the new numbers.
     (domain_out / SOURCE_FILE).unlink(missing_ok=True)
@@ -627,7 +627,7 @@ def project_snapshot(snapshot: Path, domain: str, out_root: Path) -> list[Projec
     for source in cycles:
         shutil.copyfile(source, domain_out / source.name)
     if domain == "traffic_signal" and not cycles:
-        for name in CADENCE_FILES:
+        for name in CYCLE_FILES:
             (domain_out / name).unlink(missing_ok=True)
     write_source(snapshot, domain_out / SOURCE_FILE)
     _prune_stale_arms(domain_out)

@@ -53,7 +53,7 @@ def validate_comparison_settings(
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
-class CadenceSettings:
+class CycleSettings:
     """The finite selection screen and its independent final evaluation banks."""
 
     max_period: int
@@ -66,7 +66,7 @@ class CadenceSettings:
 
     def __post_init__(self) -> None:
         if min(asdict(self).values()) < 1:
-            raise ValueError("cadence settings must be positive")
+            raise ValueError("cycle settings must be positive")
         if (
             min(
                 self.coarse_episodes,
@@ -82,7 +82,7 @@ class CadenceSettings:
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
-class CadenceCell:
+class CycleCell:
     """One selected cycle and the two independent evaluation samples of its feedback policy."""
 
     frames: int
@@ -105,7 +105,7 @@ class ControlFacts:
     cause_free: np.ndarray
 
 
-def enumerate_cadences(*, max_period: int, horizon: int, cooldown_max: int) -> np.ndarray:
+def enumerate_cycles(*, max_period: int, horizon: int, cooldown_max: int) -> np.ndarray:
     """Enumerate distinct legal action sequences in lexicographic order."""
     sequences: set[tuple[int, ...]] = set()
     for period in range(1, max_period + 1):
@@ -123,7 +123,7 @@ def enumerate_cadences(*, max_period: int, horizon: int, cooldown_max: int) -> n
 
 
 def control_facts(env: TrafficSignalEnv, sequences: np.ndarray) -> ControlFacts:
-    """Build red-light and cooldown frames before each action, with the reset frame at time zero."""
+    """Build red-light and mandatory-hold frames before each action, with the reset frame at time zero."""
     count, horizon = sequences.shape
     frames = np.zeros((count, horizon), dtype=np.int64)
     causes = np.zeros((count, horizon), dtype=np.int64)
@@ -139,7 +139,7 @@ def control_facts(env: TrafficSignalEnv, sequences: np.ndarray) -> ControlFacts:
         causes[:, time] = cause
         action = sequences[:, time]
         if np.any((action == ADVANCE) & (cooldown > 0)):
-            raise ValueError("a candidate advances during the cooldown")
+            raise ValueError("a candidate advances during the mandatory hold")
         blocked = (blocked + action) % NUM_INTERSECTIONS
         cooldown = np.where(action == ADVANCE, env.cooldown_max, np.maximum(cooldown - 1, 0))
         cause = delta[cause, action_labels[action]]
@@ -214,7 +214,7 @@ def feedback_table(
 ) -> tuple[np.ndarray, int]:
     """Construct the feedback rules and prove their consistency until the complete deterministic state repeats."""
     if not word or set(word) - {"a", "h"}:
-        raise ValueError("a cadence word must contain only a and h")
+        raise ValueError("a cycle word must contain only a and h")
     base = NUM_INTERSECTIONS * (env.cooldown_max + 1)
     cause_states = env.cause_dfa_size if with_cause else 1
     table = np.full(base**frames * cause_states, -1, dtype=np.int32)
@@ -243,7 +243,7 @@ def feedback_table(
         table[code] = action
         rules.add(code)
         if action == ADVANCE and cooldown > 0:
-            raise ValueError(f"{word} advances during the cooldown")
+            raise ValueError(f"{word} advances during the mandatory hold")
         blocked = (blocked + action) % NUM_INTERSECTIONS
         cooldown = env.cooldown_max if action == ADVANCE else max(cooldown - 1, 0)
         cause = int(delta[cause, labels[action]])
@@ -255,8 +255,8 @@ def feedback_table(
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
-class CadencePolicy:
-    """Execute a cycle from red-light and cooldown frames, with cause state only when declared."""
+class CyclePolicy:
+    """Execute a cycle from red-light and mandatory-hold frames, with cause state only when declared."""
 
     env: TrafficSignalEnv
     frames: int
@@ -298,7 +298,7 @@ def evaluate_cycle(
     table, rules = feedback_table(env, word, frames=frames, with_cause=with_cause)
     evaluate = build_greedy_eval(
         env,
-        CadencePolicy(env=env, frames=frames, with_cause=with_cause),
+        CyclePolicy(env=env, frames=frames, with_cause=with_cause),
         gamma=1.0,
         num_runs=1,
         eval_episodes=episodes,
@@ -315,12 +315,10 @@ def evaluate_cycle(
     return np.asarray(rollout.total_returns[0], dtype=np.float64), rules
 
 
-def screen_cadences(
-    env: TrafficSignalEnv, settings: CadenceSettings
-) -> tuple[list[CadenceCell], int]:
+def screen_cycles(env: TrafficSignalEnv, settings: CycleSettings) -> tuple[list[CycleCell], int]:
     """Select one cycle per memory class (two frames, four frames, the cause state) by a coarse and a fine
     screen, and evaluate each on episode banks independent of the selection."""
-    sequences = enumerate_cadences(
+    sequences = enumerate_cycles(
         max_period=settings.max_period, horizon=settings.horizon, cooldown_max=env.cooldown_max
     )
     facts = control_facts(env, sequences)
@@ -351,7 +349,7 @@ def screen_cadences(
     fine[refined] = screen_samples(
         env, sequences[np.asarray(refined)], episodes=settings.fine_episodes, seed=2
     ).mean(axis=1)
-    cells: list[CadenceCell] = []
+    cells: list[CycleCell] = []
     for frames, with_cause in ((2, False), (4, False), (1, True)):
         key = (frames, with_cause, False)
         chosen = max(nominees[key], key=lambda i: fine[i])
@@ -368,7 +366,7 @@ def screen_cadences(
             horizon=settings.horizon,
         )
         cells.append(
-            CadenceCell(
+            CycleCell(
                 frames=frames,
                 with_cause=with_cause,
                 word=word,
@@ -383,10 +381,10 @@ def screen_cadences(
     return cells, len(sequences)
 
 
-def write_cadence_results(output: Path, cells: list[CadenceCell]) -> None:
+def write_cycle_results(output: Path, cells: list[CycleCell]) -> None:
     """Write full-precision means, standard errors, and all individual evaluation returns."""
     output.mkdir(parents=True, exist_ok=True)
-    with (output / "cadence.csv").open("w", newline="") as handle:
+    with (output / "cycles.csv").open("w", newline="") as handle:
         writer = csv.writer(handle)
         writer.writerow(
             (
@@ -424,7 +422,7 @@ def write_cadence_results(output: Path, cells: list[CadenceCell]) -> None:
                     float(compared.std(ddof=1) / np.sqrt(len(compared))),
                 )
             )
-    with (output / "cadence_episodes.csv").open("w", newline="") as handle:
+    with (output / "cycles_episodes.csv").open("w", newline="") as handle:
         writer = csv.writer(handle)
         writer.writerow(("frames", "with_cause", "word", "bank", "episode", "return"))
         for cell in cells:
@@ -438,8 +436,8 @@ def write_cadence_results(output: Path, cells: list[CadenceCell]) -> None:
                 )
 
 
-def write_cadence_optimum(
-    output: Path, env: TrafficSignalEnv, cells: list[CadenceCell], horizon: int, *, gamma: float
+def write_cycle_optimum(
+    output: Path, env: TrafficSignalEnv, cells: list[CycleCell], horizon: int, *, gamma: float
 ) -> tuple[float, list[float]]:
     """Write cycle scores and the truncated score of a discount-optimal stationary policy."""
     matrices = transition_matrices(env)
@@ -464,7 +462,7 @@ def write_cadence_optimum(
         minimum_action_gap=gap,
         reachable_states=reached,
     )
-    with (output / "cadence_optimum.csv").open("w", newline="") as handle:
+    with (output / "cycles_optimum.csv").open("w", newline="") as handle:
         writer = csv.writer(handle)
         writer.writerow(("policy", "frames", "with_cause", "word", "exact_return"))
         for cell, value in zip(cells, exact, strict=True):
@@ -473,11 +471,11 @@ def write_cadence_optimum(
     return optimum, exact
 
 
-def write_cadence_source_records(
+def write_cycle_source_records(
     output: Path,
     *,
     config: TrafficSignalQLConfig,
-    settings: CadenceSettings,
+    settings: CycleSettings,
     candidates: int,
     command: list[str],
 ) -> None:
@@ -519,8 +517,8 @@ def write_cadence_source_records(
         if difference.returncode != 1:
             raise ValueError(f"cannot record the untracked source {name}")
         patch += difference.stdout
-    (output / "cadence_source.patch").write_text(patch)
-    shutil.copyfile(ROOT_DIR / "uv.lock", output / "cadence_uv.lock")
+    (output / "cycles_source.patch").write_text(patch)
+    shutil.copyfile(ROOT_DIR / "uv.lock", output / "cycles_uv.lock")
     portable_command = [
         str(Path(value).resolve().relative_to(ROOT_DIR.resolve()))
         if Path(value).is_absolute()
@@ -552,8 +550,8 @@ def write_cadence_source_records(
             if (ROOT_DIR / name).is_file()
         },
         "source_dirty": bool(git("status", "--porcelain")),
-        "source_patch": "cadence_source.patch",
-        "dependency_lock": "cadence_uv.lock",
+        "source_patch": "cycles_source.patch",
+        "dependency_lock": "cycles_uv.lock",
         "command": shlex.join(portable_command),
         "command_output": "the output directory is relocatable",
         "python": platform.python_version(),
@@ -583,7 +581,7 @@ def write_cadence_source_records(
             "ceiling": settings.horizon,
             "comparison_bank": "jax.random.split(jax.random.key(0), comparison_episodes); distinct from selection",
             "holdout_bank": "jax.random.split(jax.random.key(3), holdout_episodes); step key split in two; distinct from selection",
-            "holdout_implementation": "tcirl.traffic_cadence.screen_samples; current environment step, fixed selected actions",
+            "holdout_implementation": "tcirl.traffic_cycles.screen_samples; current environment step, fixed selected actions",
         },
         "optimum": {
             "implementation": "tcirl.traffic_optimum.solve_optimum, policy_return and word_return",
@@ -600,15 +598,15 @@ def write_cadence_source_records(
         "files": {
             name: sha256((output / name).read_bytes()).hexdigest()
             for name in (
-                "cadence.csv",
-                "cadence_episodes.csv",
-                "cadence_optimum.csv",
+                "cycles.csv",
+                "cycles_episodes.csv",
+                "cycles_optimum.csv",
                 "stationary_policy.npz",
-                "cadence_source.patch",
-                "cadence_uv.lock",
+                "cycles_source.patch",
+                "cycles_uv.lock",
             )
         },
     }
-    (output / "cadence_source_records.json").write_text(
+    (output / "cycles_source_records.json").write_text(
         json.dumps(metadata, indent=2, sort_keys=True) + "\n"
     )
